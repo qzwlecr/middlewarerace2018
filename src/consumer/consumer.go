@@ -24,6 +24,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 
 	c := &Consumer{
 		path:      watchPath,
+		etcdAddr: endpoints,
 		providers: make(map[string]*Provider),
 		client:    cli,
 	}
@@ -70,10 +71,10 @@ func (c *Consumer) watchProvider() {
 			switch ev.Type {
 			case etcdv3.EventTypePut:
 				info := getProviderInfo(ev)
-				//log.Println(string(ev.Kv.Key) + " " + info.IP + "is Connecting!")
+				log.Println(string(ev.Kv.Key) + " " + info.IP + " is Connecting!")
 				c.addProvider(string(ev.Kv.Key), info)
 			case etcdv3.EventTypeDelete:
-				//log.Println(string(ev.Kv.Key) + "Has Been removed!")
+				log.Println(string(ev.Kv.Key) + " Has Been removed!")
 				delete(c.providers, string(ev.Kv.Key))
 			}
 		}
