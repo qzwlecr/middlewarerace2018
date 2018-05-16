@@ -1,19 +1,19 @@
-package discovery
+package agent
 
 import (
-	"github.com/coreos/etcd/clientv3"
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"log"
 	"context"
 	"encoding/json"
 )
 
 func NewConsumer(endpoints []string, watchPath string) *Consumer {
-	cfg := clientv3.Config{
+	cfg := etcdv3.Config{
 		Endpoints:   endpoints,
 		DialTimeout: dialTimeout,
 	}
 
-	cli, err := clientv3.New(cfg)
+	cli, err := etcdv3.New(cfg)
 
 	if err != nil {
 		log.Fatal(err)
@@ -26,9 +26,17 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		client:    cli,
 	}
 
-	defer cli.Close()
-	go c.WatchProvider()
+	go c.Start()
+
 	return c
+}
+
+func (c *Consumer) Start() {
+	c.watchProvider()
+}
+
+func (c *Consumer) Stop() {
+	c.client.Close()
 }
 
 func (c *Consumer) AddProvider(key string, info *ProviderInfo) {
@@ -39,7 +47,7 @@ func (c *Consumer) AddProvider(key string, info *ProviderInfo) {
 	c.providers[p.name] = p
 }
 
-func GetProviderInfo(ev *clientv3.Event) *ProviderInfo {
+func getProviderInfo(ev *etcdv3.Event) *ProviderInfo {
 	info := &ProviderInfo{}
 	err := json.Unmarshal([]byte(ev.Kv.Value), info)
 	if err != nil {
@@ -48,17 +56,17 @@ func GetProviderInfo(ev *clientv3.Event) *ProviderInfo {
 	return info
 }
 
-func (c *Consumer) WatchProvider() {
-	chanWatch := c.client.Watch(context.Background(), c.path, clientv3.WithPrefix())
+func (c *Consumer) watchProvider() {
+	chanWatch := c.client.Watch(context.Background(), c.path, etcdv3.WithPrefix())
 	for wresp := range chanWatch {
 		for _, ev := range wresp.Events {
 			switch ev.Type {
-			case clientv3.EventTypePut:
-				info := GetProviderInfo(ev)
-				log.Println(string(ev.Kv.Key) + " " + info.IP + "is Connecting!")
+			case etcdv3.EventTypePut:
+				info := getProviderInfo(ev)
+				//log.Println(string(ev.Kv.Key) + " " + info.IP + "is Connecting!")
 				c.AddProvider(string(ev.Kv.Key), info)
-			case clientv3.EventTypeDelete:
-				log.Println(string(ev.Kv.Key) + "Has Been removed!")
+			case etcdv3.EventTypeDelete:
+				//log.Println(string(ev.Kv.Key) + "Has Been removed!")
 				delete(c.providers, string(ev.Kv.Key))
 			}
 		}

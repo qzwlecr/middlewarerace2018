@@ -1,5 +1,11 @@
 package main
 
-func main(){
+import (
+	"agent"
+)
+
+func main() {
+
+	agent.NewConsumer()
 
 }

@@ -1,7 +1,7 @@
-package discovery
+package agent
 
 import (
-	"github.com/coreos/etcd/clientv3"
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"log"
 	"encoding/json"
 	"context"
@@ -9,12 +9,12 @@ import (
 
 func NewProvider(name string, info ProviderInfo, endpoints []string) *Provider {
 
-	cfg := clientv3.Config{
+	cfg := etcdv3.Config{
 		Endpoints:   endpoints,
 		DialTimeout: dialTimeout,
 	}
 
-	cli, err := clientv3.New(cfg)
+	cli, err := etcdv3.New(cfg)
 
 	if err != nil {
 		log.Fatal(err)
@@ -27,6 +27,8 @@ func NewProvider(name string, info ProviderInfo, endpoints []string) *Provider {
 		stop:   make(chan error),
 		client: cli,
 	}
+
+	go p.Start()
 
 	return p
 
@@ -56,7 +58,7 @@ func (p *Provider) Stop() {
 	p.stop <- nil
 }
 
-func (p *Provider) keepAlive() <-chan *clientv3.LeaseKeepAliveResponse {
+func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
 
 	info := &p.info
 
@@ -69,7 +71,7 @@ func (p *Provider) keepAlive() <-chan *clientv3.LeaseKeepAliveResponse {
 		return nil
 	}
 
-	_, err = p.client.Put(context.Background(), key, string(value), clientv3.WithLease(resp.ID))
+	_, err = p.client.Put(context.Background(), key, string(value), etcdv3.WithLease(resp.ID))
 	if err != nil {
 		log.Fatal(err)
 		return nil
