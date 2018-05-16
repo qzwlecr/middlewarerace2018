@@ -12,7 +12,7 @@ const (
 
 type Provider struct {
 	name     string
-	etcdAddr string
+	etcdAddr []string
 	info     ProviderInfo
 	stop     chan error
 	leaseId  etcdv3.LeaseID

@@ -9,7 +9,7 @@ const dialTimeout = 5 * time.Second
 
 type Provider struct {
 	name     string
-	etcdAddr string
+	etcdAddr []string
 	info     ProviderInfo
 	stop     chan error
 	leaseId  etcdv3.LeaseID
@@ -18,7 +18,7 @@ type Provider struct {
 
 type Consumer struct {
 	path      string
-	etcdAddr  string
+	etcdAddr  []string
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }

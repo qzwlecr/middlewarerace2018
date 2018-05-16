@@ -25,6 +25,7 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 
 	p := &Provider{
 		name:   name,
+		etcdAddr: endpoints,
 		info:   info,
 		stop:   make(chan error),
 		client: cli,
