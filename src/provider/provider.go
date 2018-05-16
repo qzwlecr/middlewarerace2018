@@ -1,4 +1,4 @@
-package agent
+package provider
 
 import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -7,7 +7,9 @@ import (
 	"context"
 )
 
-func NewProvider(name string, info ProviderInfo, endpoints []string) *Provider {
+//NewProvider receive etcd server address, the service name, and the service info.
+//And return the consumer which has been started.
+func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 
 	cfg := etcdv3.Config{
 		Endpoints:   endpoints,
@@ -34,6 +36,7 @@ func NewProvider(name string, info ProviderInfo, endpoints []string) *Provider {
 
 }
 
+//Start shouldn't be called manually.
 func (p *Provider) Start() {
 	ch := p.keepAlive()
 
@@ -54,10 +57,12 @@ func (p *Provider) Start() {
 	}
 }
 
+//Stop must be used for closing connection.
 func (p *Provider) Stop() {
 	p.stop <- nil
 }
 
+//keepAlive receive the etcdv3.response, and update lease.
 func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
 
 	info := &p.info
@@ -86,6 +91,7 @@ func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
 	return ret
 }
 
+//revoke is a wrapper of etcd.Revoke.
 func (p *Provider) revoke() error {
 
 	_, err := p.client.Revoke(context.Background(), p.leaseId)

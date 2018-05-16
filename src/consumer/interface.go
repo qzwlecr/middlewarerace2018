@@ -1,14 +1,11 @@
-package agent
+package consumer
 
 import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"time"
 )
 
-const (
-	dialTimeout = 5 * time.Second
-	MinTTL      = 5
-)
+const dialTimeout = 5 * time.Second
 
 type Provider struct {
 	name     string

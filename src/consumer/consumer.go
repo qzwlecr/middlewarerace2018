@@ -1,4 +1,4 @@
-package agent
+package consumer
 
 import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 )
 
+//NewConsumer receive etcd server address, and the services path on etcd.
+//And return the consumer which has been started.
 func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	cfg := etcdv3.Config{
 		Endpoints:   endpoints,
@@ -31,15 +33,18 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	return c
 }
 
+//Start shouldn't be called manually.
 func (c *Consumer) Start() {
 	c.watchProvider()
 }
 
+//Stop must be used for closing connection.
 func (c *Consumer) Stop() {
 	c.client.Close()
 }
 
-func (c *Consumer) AddProvider(key string, info *ProviderInfo) {
+//addProvider add (key,info) to the consumer's map.
+func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 	p := &Provider{
 		name: key,
 		info: *info,
@@ -47,6 +52,7 @@ func (c *Consumer) AddProvider(key string, info *ProviderInfo) {
 	c.providers[p.name] = p
 }
 
+//getProviderInfo return one etcdv3.event's info(Marshaled by Json).
 func getProviderInfo(ev *etcdv3.Event) *ProviderInfo {
 	info := &ProviderInfo{}
 	err := json.Unmarshal([]byte(ev.Kv.Value), info)
@@ -56,6 +62,7 @@ func getProviderInfo(ev *etcdv3.Event) *ProviderInfo {
 	return info
 }
 
+//watchProvider can auto update the consumer's provider-map.
 func (c *Consumer) watchProvider() {
 	chanWatch := c.client.Watch(context.Background(), c.path, etcdv3.WithPrefix())
 	for wresp := range chanWatch {
@@ -64,7 +71,7 @@ func (c *Consumer) watchProvider() {
 			case etcdv3.EventTypePut:
 				info := getProviderInfo(ev)
 				//log.Println(string(ev.Kv.Key) + " " + info.IP + "is Connecting!")
-				c.AddProvider(string(ev.Kv.Key), info)
+				c.addProvider(string(ev.Kv.Key), info)
 			case etcdv3.EventTypeDelete:
 				//log.Println(string(ev.Kv.Key) + "Has Been removed!")
 				delete(c.providers, string(ev.Kv.Key))
