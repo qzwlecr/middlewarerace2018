@@ -16,3 +16,12 @@ type Reply struct {
 	outBuf   []byte
 	someInfo string
 }
+
+type CustRequest struct {
+	content []byte
+}
+
+type CustResponse struct {
+	delay uint32
+	reply []byte
+}
