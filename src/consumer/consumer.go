@@ -24,7 +24,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 
 	c := &Consumer{
 		path:      watchPath,
-		etcdAddr: endpoints,
+		etcdAddr:  endpoints,
 		providers: make(map[string]*Provider),
 		client:    cli,
 	}
@@ -36,12 +36,8 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 
 //Start shouldn't be called manually.
 func (c *Consumer) Start() {
+	defer c.client.Close()
 	c.watchProvider()
-}
-
-//Stop must be used for closing connection.
-func (c *Consumer) Stop() {
-	c.client.Close()
 }
 
 //addProvider add (key,info) to the consumer's map.
