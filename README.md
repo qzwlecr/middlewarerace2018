@@ -30,9 +30,7 @@
 
 ### 协议细节
 
-TODO: 需实现Provider相关负载信息的实时传递与缓存。
-
-TODO: ZHWK's Implement.
+READ PROTOCOL.md, plz
 
 ### 合作者
 
