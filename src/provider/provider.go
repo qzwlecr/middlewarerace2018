@@ -50,7 +50,6 @@ func (p *Provider) Start() {
 			return
 		case _, ok := <-ch:
 			if !ok {
-				log.Println("KA channel closed")
 				p.revoke()
 				return
 			}

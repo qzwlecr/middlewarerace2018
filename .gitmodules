@@ -1,6 +1,0 @@
-[submodule "src/github.com/coreos/etcd"]
-	path = src/github.com/coreos/etcd
-	url = https://github.com/coreos/etcd
-[submodule "src/google.golang.org/grpc"]
-	path = src/google.golang.org/grpc
-	url = https://github.com/grpc/grpc-go
