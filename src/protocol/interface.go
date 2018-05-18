@@ -8,10 +8,10 @@ type Protocol interface {
 
 // Converter : make go happy
 type Converter interface {
-	HTTPToCustom(httpreq Protocol) (req Protocol)
-	CustomToDubbo(custreq Protocol) (dubboreq Protocol)
-	DubboToCustom(dubboresp Protocol) (custresp Protocol)
-	CustomToHTTP(resp Protocol) (httpresp Protocol)
+	HTTPToCustom(httpreq HttpPacks) (req CustRequest)
+	CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks)
+	DubboToCustom(dubboresp DubboPacks) (custresp CustResponse)
+	CustomToHTTP(resp CustResponse) (httpresp HttpPacks)
 }
 
 // CustRequest : make go happy
