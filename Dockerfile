@@ -3,7 +3,7 @@ FROM golang AS builder
 COPY . $GOPATH
 WORKDIR $GOPATH
 RUN set -ex \
-  && go build -o agent src/main/main.go
+  && go build -o /go/agent src/main/main.go
 
 FROM registry.cn-hangzhou.aliyuncs.com/aliware2018/services AS exist
 
