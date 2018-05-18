@@ -32,7 +32,7 @@ This is simple: since the consumer query have only 4 parameters, and each of the
 
 ```text
 Query Protocol:
-POST[interface] + '\n' + POST[method] + '\n' + POST[pmTypeStr] + '\n' + POST[params] + '\n'
+POST[interface] + '\n' + POST[method] + '\n' + POST[pmTypeStr] + '\n' + POST[params]
 ```
 
 very simple, right?
@@ -50,7 +50,6 @@ A certain amount of queries will be send concurrently to the provider process, u
 struct NResp{
     unsigned long latency; // the time between the query enqueued in agent and response are finally sent by provider process, in us
     VAR_LENGTH response_content; // the response content by provider process.
-    char TERMINATING_CHAR = '\n';
 };
 ```
 
