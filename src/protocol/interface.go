@@ -10,7 +10,7 @@ type Protocol interface {
 type Converter interface {
 	HTTPToCustom(httpreq HttpPacks) (req CustRequest)
 	CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks)
-	DubboToCustom(dubboresp DubboPacks) (custresp CustResponse)
+	DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse)
 	CustomToHTTP(resp CustResponse) (httpresp HttpPacks)
 }
 
@@ -21,9 +21,12 @@ type CustRequest struct {
 
 // CustResponse : make go happy
 type CustResponse struct {
-	delay uint32
+	delay uint64
 	reply []byte
 }
+
+// CUST_MAGIC : the ultimate magic (TuM)
+const CUST_MAGIC uint64 = 7234316346692625778
 
 // HttpPacks : make Go HAPPY!
 type HttpPacks struct {
@@ -36,11 +39,17 @@ type DubboPacks struct {
 	reqType uint8
 	status  uint8
 	reqId   uint64
-	payload string // => length(uint32) + payload_content(byte[])
+	payload []byte // => length(uint32) + payload_content(byte[])
 }
 
+// DUBBO_VERSION : the very version. Very magic.
+const DUBBO_VERSION = "2.6.0"
+
+// API_VERSION : the next very version. Magic again.
+const API_VERSION = "0.0.0"
+
 // DUBBO_MAGIC : hmmmmm, really interpreted like that?
-const DUBBO_MAGIC = 0xbbda
+const DUBBO_MAGIC = 0xdabb
 
 // DUBBO_REQUEST : for reqType, use bitwise-OR
 const DUBBO_REQUEST = 128

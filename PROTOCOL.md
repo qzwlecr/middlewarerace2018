@@ -32,18 +32,21 @@ This is simple: since the consumer query have only 4 parameters, and each of the
 
 ```text
 Query Protocol:
-POST[interface] + '\n' + POST[method] + '\n' + POST[pmTypeStr] + '\n' + POST[params]
+POST[interface] + '\n' + POST[method] + '\n' + POST[pmTypeStr] + '\n' + POST[params] + '\n' \
++ POST[attachments]
 ```
 
 very simple, right?
 
+The *attachments* is for the **universal** requirement of the competition. In all test cases, this field is an empty *Map<string,string>*, serialized by *JSON*.
 
+And the HTTP requests sent by consumers will not send this. You( I mean, the one who wrote *consumer-side agent* ) need to make an empty Map, serialize it, and set the corresponding mapping in the *HttpPacks* structure.
 
 ### The Response(reply)
 
 For incoming queries, the provider-side agent should maintain a queue for these queries.
 
-A certain amount of queries will be send concurrently to the provider process, until significant lags happened between a query and its corresponding response.
+A certain amount of queries will be send concurrently to the provider process. In order to find out that **amount**, we will start from a small value, and increase it gradually until significant lags happened between a query and its corresponding response.
 
 ```C
 // Normal Response:
