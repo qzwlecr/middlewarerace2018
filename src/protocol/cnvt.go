@@ -5,6 +5,7 @@ import "strings"
 import "strconv"
 import "encoding/json"
 
+// SimpleConverter : the converter that do something great!
 type SimpleConverter uint64
 
 // HTTPToCustom : TODO test.
