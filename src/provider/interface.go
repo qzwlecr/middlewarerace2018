@@ -14,7 +14,7 @@ type Provider struct {
 	name     string
 	etcdAddr []string
 	info     ProviderInfo
-	stop     chan error
+	chanStop chan error
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
 }

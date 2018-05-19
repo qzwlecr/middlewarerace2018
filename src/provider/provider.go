@@ -24,11 +24,11 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 	}
 
 	p := &Provider{
-		name:   name,
+		name:     name,
 		etcdAddr: endpoints,
-		info:   info,
-		stop:   make(chan error),
-		client: cli,
+		info:     info,
+		chanStop: make(chan error),
+		client:   cli,
 	}
 
 	go p.Start()
@@ -40,10 +40,9 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 //Start shouldn't be called manually.
 func (p *Provider) Start() {
 	ch := p.keepAlive()
-
 	for {
 		select {
-		case <-p.stop:
+		case <-p.chanStop:
 			p.revoke()
 			return
 		case <-p.client.Ctx().Done():
@@ -57,9 +56,9 @@ func (p *Provider) Start() {
 	}
 }
 
-//Stop must be used for closing connection.
+//Stop can be used for closing provider manually.
 func (p *Provider) Stop() {
-	p.stop <- nil
+	p.chanStop <- nil
 }
 
 //keepAlive receive the etcdv3.response, and update lease.
