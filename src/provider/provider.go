@@ -16,8 +16,8 @@ import (
 
 // change it to your listen address and provider address
 const (
-	lnAddr       = ":12345"
-	providerAddr = ":23456"
+	lnAddr       = ":30000"
+	providerAddr = ":20880"
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
