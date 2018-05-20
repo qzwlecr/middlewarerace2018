@@ -21,7 +21,7 @@ type CustRequest struct {
 
 // CustResponse : make go happy
 type CustResponse struct {
-	delay uint64
+	Delay uint64
 	reply []byte
 }
 

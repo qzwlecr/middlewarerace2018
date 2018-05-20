@@ -17,9 +17,9 @@ func (cur *CustRequest) FromByteArr(buffer []byte) {
 func (cus *CustResponse) ToByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(u64buf, cus.delay)
+	binary.LittleEndian.PutUint64(u64buf, cus.Delay)
 	pbuf.Write(u64buf)
-	if cus.delay != CUST_MAGIC {
+	if cus.Delay != CUST_MAGIC {
 		pbuf.Write(cus.reply)
 	}
 	return pbuf.Bytes()
@@ -27,8 +27,8 @@ func (cus *CustResponse) ToByteArr() (buffer []byte) {
 
 // FromByteArr: make go happy
 func (cus *CustResponse) FromByteArr(buffer []byte) {
-	cus.delay = binary.LittleEndian.Uint64(buffer[0:4])
-	if cus.delay != CUST_MAGIC {
+	cus.Delay = binary.LittleEndian.Uint64(buffer[0:4])
+	if cus.Delay != CUST_MAGIC {
 		cus.reply = buffer[4:]
 	} else {
 		cus.reply = make([]byte, 0)
