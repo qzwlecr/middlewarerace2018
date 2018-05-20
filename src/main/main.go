@@ -14,9 +14,9 @@ func main() {
 	etcdUrl := flag.String("u", "http://etcd:2379", "")
 	memory := flag.Int("m", 1536, "")
 	types := flag.String("t", "provider", "")
-	name := flag.String("n", "small", "")
+	name := flag.String("n", "-small", "")
 	flag.Parse()
-	f, err := os.OpenFile(*logsDir + "/" + *types + *name+".log",
+	f, err := os.OpenFile(*logsDir + "/" + *types + *name+"/own.log",
 		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
