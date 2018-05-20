@@ -90,6 +90,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	cnvt := new(protocol.SimpleConverter)
 	hp := new(protocol.HttpPacks)
 	hb, err := httputil.DumpRequest(r, true)
+	log.Println(string(hb))
 	if err != nil {
 		log.Fatal(err)
 	}
