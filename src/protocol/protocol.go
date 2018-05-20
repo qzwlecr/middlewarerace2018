@@ -1,5 +1,6 @@
 package protocol
 
+import "net/http"
 import "bytes"
 import "encoding/binary"
 
@@ -55,4 +56,28 @@ func (dp *DubboPacks) fromByteArr(buffer []byte) {
 	dp.status = uint8(buffer[3])
 	dp.reqId = binary.BigEndian.Uint64(buffer[4:12])
 	dp.payload = buffer[16:]
+}
+
+func (httpack *HttpPacks) toByteArr() (buffer []byte) {
+	var pbuf bytes.Buffer
+	assert((len(httpack.direct)^len(httpack.payload)) != 0, "HTTP packs direct & payload both exist or both non-exist.")
+	var l2buf bytes.Buffer
+	if len(httpack.direct) != 0 {
+		l2buf.WriteString(httpack.direct)
+	} else {
+		cnt := 0
+		for k, v := range httpack.payload {
+			l2buf.WriteString(k)
+			l2buf.WriteString("=")
+			l2buf.WriteString(v)
+			if cnt != len(httpack.payload)-1 {
+				l2buf.WriteString("&")
+			}
+		}
+	}
+	assert((len(httpack.method)&len(httpack.url)) != 0, "Not a valid HTTP pack.")
+	req, err := http.NewRequest(httpack.method, httpack.url, &l2buf)
+	assert(err == nil, "Error occurred while attempt to create request: ")
+	req.Write(&pbuf)
+	return pbuf.Bytes()
 }

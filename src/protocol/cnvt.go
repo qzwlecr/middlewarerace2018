@@ -76,16 +76,16 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 	strslice := strings.Split(string(dubboresp.payload), "\n")
 	var rettype int
 	err := json.Unmarshal([]byte(strslice[0]), &rettype)
-	assert(err != nil, "unmarshalling return type: "+err.Error())
+	assert(err == nil, "unmarshalling return type: ")
 	assert(rettype == 1, "Unexpected response type: "+strconv.Itoa(rettype))
 	var retval string
 	err = json.Unmarshal([]byte(strslice[1]), &retval)
-	assert(err != nil, "Unable to unmarshal return value: "+err.Error())
+	assert(err == nil, "Unable to unmarshal return value: " )
 	custresp.reply = []byte(retval)
 	return custresp
 }
 
-// CustomToHTTP : WARN response will be put in httpresp.payload['body'], which must be put into the HTTP body.
+// CustomToHTTP : woo-hoo!
 func (cnvt *SimpleConverter) CustomToHTTP(resp CustResponse) (httpresp HttpPacks) {
 	assert(resp.delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
 	httpresp.payload = make(map[string]string)

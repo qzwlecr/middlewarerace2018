@@ -30,6 +30,9 @@ const CUST_MAGIC uint64 = 7234316346692625778
 
 // HttpPacks : make Go HAPPY!
 type HttpPacks struct {
+	url     string
+	method  string
+	direct  string
 	payload map[string]string
 }
 
