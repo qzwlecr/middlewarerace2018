@@ -5,6 +5,13 @@ import (
 	"log"
 	"context"
 	"encoding/json"
+	"net/http"
+	"io"
+	"protocol"
+	"net/http/httputil"
+	"math"
+	"net"
+	"encoding/binary"
 )
 
 //NewConsumer receive etcd server address, and the services path on etcd.
@@ -30,6 +37,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	}
 
 	go c.Start()
+	go c.communicate()
 
 	return c
 }
@@ -76,4 +84,53 @@ func (c *Consumer) watchProvider() {
 		}
 	}
 
+}
+
+func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
+	cnvt := new(protocol.SimpleConverter)
+	hp := new(protocol.HttpPacks)
+	hb, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hp.FromByteArr(hb)
+
+	cpreq := cnvt.HTTPToCustom(*hp)
+	cbreq := cpreq.ToByteArr()
+
+	minDelay := uint64(math.MaxUint64)
+	minDelayId := ""
+	for id, p := range c.providers {
+		if minDelay > p.delay {
+			minDelayId = id
+			minDelay = p.delay
+		}
+	}
+
+	d, err := net.Dial("tcp", net.JoinHostPort(c.providers[minDelayId].info.IP, "30000"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	lens := uint32(len(cbreq))
+	lb := make([]byte, 4)
+	binary.BigEndian.PutUint32(lb, lens)
+	d.Write(lb)
+	d.Write(cbreq)
+	d.Read(lb)
+	lens = binary.BigEndian.Uint32(lb)
+	cbrep := make([]byte, lens)
+	io.ReadFull(d, cbrep)
+	cprep := new(protocol.CustResponse)
+	cprep.FromByteArr(cbrep)
+	c.providers[minDelayId].delay = cprep.Delay
+
+	*hp = cnvt.CustomToHTTP(*cprep)
+
+	hb = hp.ToByteArr()
+	io.WriteString(w, string(hb))
+}
+
+func (c *Consumer) communicate() {
+	http.HandleFunc("/", c.clientHandler)
+	log.Fatal(http.ListenAndServe(":20000", nil))
 }

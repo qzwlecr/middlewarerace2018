@@ -75,7 +75,7 @@ func assert(a bool, pnstr string) {
 
 // DubboToCustom : TODO test.
 func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse) {
-	custresp.delay = extrainfo
+	custresp.Delay = extrainfo
 	if extrainfo == CUST_MAGIC {
 		custresp.reply = make([]byte, 0)
 		return custresp
@@ -96,7 +96,7 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 
 // CustomToHTTP : woo-hoo!
 func (cnvt *SimpleConverter) CustomToHTTP(resp CustResponse) (httpresp HttpPacks) {
-	assert(resp.delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
+	assert(resp.Delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
 	httpresp.payload = make(map[string]string)
 	httpresp.payload["body"] = string(resp.reply)
 	return httpresp
