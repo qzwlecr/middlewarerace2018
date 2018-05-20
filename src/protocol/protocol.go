@@ -4,14 +4,17 @@ import "net/http"
 import "bytes"
 import "encoding/binary"
 
+// toByteArr : make go happy
 func (cur *CustRequest) toByteArr() (buffer []byte) {
 	return cur.content
 }
 
+// fromByteArr: make go happy
 func (cur *CustRequest) fromByteArr(buffer []byte) {
 	cur.content = buffer
 }
 
+// toByteArr : make go happy
 func (cus *CustResponse) toByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
@@ -23,6 +26,7 @@ func (cus *CustResponse) toByteArr() (buffer []byte) {
 	return pbuf.Bytes()
 }
 
+// fromByteArr: make go happy
 func (cus *CustResponse) fromByteArr(buffer []byte) {
 	cus.delay = binary.LittleEndian.Uint64(buffer[0:4])
 	if cus.delay != CUST_MAGIC {
@@ -32,6 +36,7 @@ func (cus *CustResponse) fromByteArr(buffer []byte) {
 	}
 }
 
+// toByteArr : make go happy
 func (dp *DubboPacks) toByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u16buf := make([]byte, 2)
@@ -50,6 +55,7 @@ func (dp *DubboPacks) toByteArr() (buffer []byte) {
 	return pbuf.Bytes()
 }
 
+// fromByteArr: make go happy
 func (dp *DubboPacks) fromByteArr(buffer []byte) {
 	dp.magic = binary.BigEndian.Uint16(buffer[0:2])
 	dp.reqType = uint8(buffer[2])
@@ -58,6 +64,7 @@ func (dp *DubboPacks) fromByteArr(buffer []byte) {
 	dp.payload = buffer[16:]
 }
 
+// toByteArr : make go happy
 func (httpack *HttpPacks) toByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	assert((len(httpack.direct)^len(httpack.payload)) != 0, "HTTP packs direct & payload both exist or both non-exist.")
@@ -82,6 +89,7 @@ func (httpack *HttpPacks) toByteArr() (buffer []byte) {
 	return pbuf.Bytes()
 }
 
+// fromByteArr: make go happy
 func (pack *HttpPacks) fromByteArr(buffer []byte) {
 	packBuf := bytes.NewBuffer(buffer)
 
