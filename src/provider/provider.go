@@ -1,10 +1,23 @@
 package provider
 
 import (
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"log"
-	"encoding/json"
+	"bytes"
 	"context"
+	"encoding/binary"
+	"encoding/json"
+	"io"
+	"log"
+	"net"
+	"protocol"
+	"time"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
+)
+
+// change it to your listen address and provider address
+const (
+	lnAddr       = ":12345"
+	providerAddr = ":23456"
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
@@ -20,7 +33,6 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 
 	if err != nil {
 		log.Fatal(err)
-		return nil
 	}
 
 	p := &Provider{
@@ -40,20 +52,120 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 //Start shouldn't be called manually.
 func (p *Provider) Start() {
 	ch := p.keepAlive()
-	for {
-		select {
-		case <-p.chanStop:
-			p.revoke()
-			return
-		case <-p.client.Ctx().Done():
-			return
-		case _, ok := <-ch:
-			if !ok {
+
+	ln, err := net.Listen("tcp", lnAddr)
+	if err != nil {
+		p.revoke()
+		log.Fatal(err)
+	}
+
+	tcpCh := make(chan int)
+
+	// handler for listening over tcp
+	go handleReq(ln, tcpCh)
+
+	go func(ch <-chan *etcdv3.LeaseKeepAliveResponse, tcpCh chan<- int) {
+		// close the tcp listener
+		defer func() {
+			tcpCh <- 0
+		}()
+
+		for {
+			select {
+			case <-p.chanStop:
 				p.revoke()
+				return
+			case _, ok := <-ch:
+				if !ok {
+					p.revoke()
+					return
+				}
+			case <-p.client.Ctx().Done():
 				return
 			}
 		}
-	}
+	}(ch, tcpCh)
+}
+
+func handleReq(ln net.Listener, tcpCh <-chan int) {
+	defer ln.Close()
+
+	go func() {
+		cConn, err := ln.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		go func(cConn net.Conn) {
+			defer cConn.Close()
+
+			pConn, err := net.Dial("tcp", providerAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			defer pConn.Close()
+
+			var cBuffer *bytes.Buffer
+			var converter protocol.SimpleConverter
+
+			for {
+				_, err = cBuffer.ReadFrom(cConn)
+				if (err != nil && err != io.EOF) || (err == io.EOF && cBuffer.Len() == 0) {
+					log.Println(err)
+					return
+				}
+
+				cLen := binary.BigEndian.Uint32(cBuffer.Bytes())
+
+				var custReq protocol.CustRequest
+				custReq.FromByteArr(cBuffer.Bytes()[4 : 4+cLen])
+				cBuffer = bytes.NewBuffer(cBuffer.Bytes()[4+cLen:])
+
+				dubboReq := converter.CustomToDubbo(custReq)
+
+				_, err = pConn.Write(dubboReq.ToByteArr())
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				timingBeg := time.Now()
+
+				var pBuffer bytes.Buffer
+				_, err = pBuffer.ReadFrom(pConn)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				timingEnd := time.Now()
+				elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
+
+				var dubboResp protocol.DubboPacks
+				pLen := pBuffer.Len()
+				dubboResp.FromByteArr(pBuffer.Bytes())
+				custResp := converter.DubboToCustom(uint64(elapsed), dubboResp)
+
+				var pLenSeq [4]byte
+				binary.BigEndian.PutUint32(pLenSeq[:], uint32(pLen))
+
+				_, err = cConn.Write(pLenSeq[:])
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				_, err = cConn.Write(custResp.ToByteArr())
+				if err != nil {
+					log.Println(err)
+					return
+				}
+			}
+		}(cConn)
+	}()
+
+	<-tcpCh
 }
 
 //Stop can be used for closing provider manually.
@@ -72,20 +184,17 @@ func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
 	resp, err := p.client.Grant(context.Background(), MinTTL)
 	if err != nil {
 		log.Fatal(err)
-		return nil
 	}
 
 	_, err = p.client.Put(context.Background(), key, string(value), etcdv3.WithLease(resp.ID))
 	if err != nil {
 		log.Fatal(err)
-		return nil
 	}
 	p.leaseId = resp.ID
 
 	ret, err := p.client.KeepAlive(context.Background(), resp.ID)
 	if err != nil {
 		log.Fatal(err)
-		return nil
 	}
 	return ret
 }
