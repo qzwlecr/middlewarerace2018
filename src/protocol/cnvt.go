@@ -1,12 +1,19 @@
 package protocol
 
-import "bytes"
-import "strings"
-import "strconv"
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"log"
+	"strconv"
+	"strings"
+	"sync"
+)
 
 // SimpleConverter : the converter that do something great!
-type SimpleConverter uint64
+type SimpleConverter struct {
+	id uint64
+	mu sync.Mutex
+}
 
 // HTTPToCustom : TODO test.
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
@@ -43,8 +50,10 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	dubboreq.reqType |= (DUBBO_REQUEST | DUBBO_NEEDREPLY)
 	dubboreq.reqType |= 6 // serialization fastjson(6)
 	dubboreq.status = 233 // no meaning
-	dubboreq.reqId = uint64(*cnvt)
-	*cnvt = *cnvt + 1
+	dubboreq.reqId = uint64(cnvt.id)
+	cnvt.mu.Lock()
+	cnvt.id = cnvt.id + 1
+	cnvt.mu.Unlock()
 	strslice := strings.Split(string(custreq.content), "\n")
 	var buf bytes.Buffer
 	marshalHelper(&buf, DUBBO_VERSION)
@@ -60,7 +69,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 
 func assert(a bool, pnstr string) {
 	if !a {
-		panic("Assertion Failed: " + pnstr)
+		log.Panicln("Assertion Failed: " + pnstr)
 	}
 }
 
@@ -80,7 +89,7 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 	assert(rettype == 1, "Unexpected response type: "+strconv.Itoa(rettype))
 	var retval string
 	err = json.Unmarshal([]byte(strslice[1]), &retval)
-	assert(err == nil, "Unable to unmarshal return value: " )
+	assert(err == nil, "Unable to unmarshal return value: ")
 	custresp.reply = []byte(retval)
 	return custresp
 }
