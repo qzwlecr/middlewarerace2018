@@ -19,6 +19,7 @@ type Provider struct {
 type Consumer struct {
 	path      string
 	etcdAddr  []string
+	chanProv  chan bool
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }

@@ -77,6 +77,7 @@ func (p *Provider) Start() {
 				p.revoke()
 				return
 			case _, ok := <-ch:
+				log.Println("Keeping Alive!")
 				if !ok {
 					p.revoke()
 					return
@@ -107,7 +108,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 			defer pConn.Close()
 
-			var cBuffer *bytes.Buffer
+			cBuffer := new(bytes.Buffer)
 
 			for {
 				_, err = cBuffer.ReadFrom(cConn)
@@ -175,6 +176,7 @@ func (p *Provider) Stop() {
 
 //keepAlive receive the etcdv3.response, and update lease.
 func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
+	log.Println("Ready to keepAlive!")
 
 	info := &p.info
 
@@ -192,10 +194,15 @@ func (p *Provider) keepAlive() <-chan *etcdv3.LeaseKeepAliveResponse {
 	}
 	p.leaseId = resp.ID
 
+	log.Println("Put OK!", key, string(value))
+
 	ret, err := p.client.KeepAlive(context.Background(), resp.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Keep Alive OK!")
+
 	return ret
 }
 
