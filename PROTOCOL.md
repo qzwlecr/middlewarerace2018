@@ -40,8 +40,6 @@ very simple, right?
 
 The *attachments* is for the **universal** requirement of the competition. In all test cases, this field is an empty *Map<string,string>*, serialized by *JSON*.
 
-And the HTTP requests sent by consumers will not send this. You( I mean, the one who wrote *consumer-side agent* ) need to make an empty Map, serialize it, and set the corresponding mapping in the *HttpPacks* structure.
-
 ### The Response(reply)
 
 For incoming queries, the provider-side agent should maintain a queue for these queries.
