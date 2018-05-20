@@ -8,11 +8,15 @@ import (
 	"net/http"
 	"io"
 	"protocol"
-	"net/http/httputil"
 	"math"
 	"net"
 	"encoding/binary"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+)
+
+const (
+	listenPort  = "20000"
+	requestPort = "30000"
 )
 
 //NewConsumer receive etcd server address, and the services path on etcd.
@@ -109,12 +113,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	cnvt := new(protocol.SimpleConverter)
 	hp := new(protocol.HttpPacks)
-	hb, err := httputil.DumpRequest(r, true)
-	log.Println(string(hb))
-	if err != nil {
-		log.Fatal(err)
-	}
-	hp.FromByteArr(hb)
+
+	hp.FromRequests(r)
+
+	//log.Println("HTTP Pack Payload:", hp.Payload)
 
 	cpreq := cnvt.HTTPToCustom(*hp)
 	cbreq := cpreq.ToByteArr()
@@ -128,7 +130,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	d, err := net.Dial("tcp", net.JoinHostPort(c.providers[minDelayId].info.IP, "30000"))
+	d, err := net.Dial("tcp", net.JoinHostPort(c.providers[minDelayId].info.IP, requestPort))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,21 +139,23 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	binary.BigEndian.PutUint32(lb, lens)
 	d.Write(lb)
 	d.Write(cbreq)
-	d.Read(lb)
+	io.ReadFull(d, lb)
 	lens = binary.BigEndian.Uint32(lb)
+	log.Println("Reply length:", lens)
 	cbrep := make([]byte, lens)
 	io.ReadFull(d, cbrep)
+	log.Println("Reply content:",cbrep)
 	cprep := new(protocol.CustResponse)
 	cprep.FromByteArr(cbrep)
-	c.providers[minDelayId].delay = cprep.Delay
+	c.providers[minDelayId].delay = (c.providers[minDelayId].delay + cprep.Delay) / 2
 
 	*hp = cnvt.CustomToHTTP(*cprep)
 
-	hb = hp.ToByteArr()
+	hb := hp.ToByteArr()
 	io.WriteString(w, string(hb))
 }
 
 func (c *Consumer) communicate() {
 	http.HandleFunc("/", c.clientHandler)
-	log.Fatal(http.ListenAndServe(":20000", nil))
+	log.Fatal(http.ListenAndServe(":"+listenPort, nil))
 }

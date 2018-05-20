@@ -16,34 +16,34 @@ type Converter interface {
 
 // CustRequest : make go happy
 type CustRequest struct {
-	content []byte
+	Content []byte
 }
 
 // CustResponse : make go happy
 type CustResponse struct {
 	Delay uint64
-	reply []byte
+	Reply []byte
 }
 
-// CUST_MAGIC : the ultimate magic (TuM)
+// CUST_MAGIC : the ultimate Magic (TuM)
 const CUST_MAGIC uint64 = 7234316346692625778
 
 // HttpPacks : make Go HAPPY!
 type HttpPacks struct {
-	direct  string
-	payload map[string]string
+	Direct  string
+	Payload map[string][]string
 }
 
 // DubboPacks : make Go Happy too!
 type DubboPacks struct {
-	magic   uint16
-	reqType uint8
-	status  uint8
-	reqId   uint64
-	payload []byte // => length(uint32) + payload_content(byte[])
+	Magic   uint16
+	ReqType uint8
+	Status  uint8
+	ReqId   uint64
+	Payload []byte // => length(uint32) + payload_content(byte[])
 }
 
-// DUBBO_VERSION : the very version. Very magic.
+// DUBBO_VERSION : the very version. Very Magic.
 const DUBBO_VERSION = "2.6.0"
 
 // API_VERSION : the next very version. Magic again.
@@ -52,7 +52,7 @@ const API_VERSION = "0.0.0"
 // DUBBO_MAGIC : hmmmmm, really interpreted like that?
 const DUBBO_MAGIC = 0xdabb
 
-// DUBBO_REQUEST : for reqType, use bitwise-OR
+// DUBBO_REQUEST : for ReqType, use bitwise-OR
 const DUBBO_REQUEST = 128
 
 // DUBBO_NEEDREPLY : also

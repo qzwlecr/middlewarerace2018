@@ -41,7 +41,6 @@ func main() {
 	log.SetOutput(f)
 	log.Println("Start!" + *types + "-" + *name + "!")
 	if *types == "provider" {
-		println(GetLocalIP())
 		provider.NewProvider(
 			[]string{*etcdUrl},
 			"/provider/" + *name,

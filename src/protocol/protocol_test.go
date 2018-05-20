@@ -11,5 +11,5 @@ func TestHttpByte2Arr(t *testing.T) {
 	var pack HttpPacks
 	pack.FromByteArr(req)
 
-	fmt.Printf("%+v\n", pack.payload)
+	fmt.Printf("%+v\n", pack.Payload)
 }

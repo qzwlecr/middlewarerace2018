@@ -77,7 +77,6 @@ func (p *Provider) Start() {
 				p.revoke()
 				return
 			case _, ok := <-ch:
-				log.Println("Keeping Alive!")
 				if !ok {
 					p.revoke()
 					return
