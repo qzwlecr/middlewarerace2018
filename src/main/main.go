@@ -23,32 +23,26 @@ func main() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
+	log.Println("Start!" + *types + "-" + *name + "!")
 	if *types == "provider" {
-		var p *provider.Provider
-		go func() {
-			ip, _ := net.InterfaceAddrs()
-			p = provider.NewProvider(
-				[]string{*etcdUrl},
-				"/provider/" + *name,
-				provider.ProviderInfo{
-					//TODO
-					IP:     ip[0].String(),
-					Memory: *memory,
-				},
-			)
-		}()
+		ip, _ := net.InterfaceAddrs()
+		log.Println("Provider's ip is:", ip)
+		provider.NewProvider(
+			[]string{*etcdUrl},
+			"/provider/" + *name,
+			provider.ProviderInfo{
+				//TODO
+				IP:     ip[0].String(),
+				Memory: *memory,
+			},
+		)
 
 	} else {
-		var c *consumer.Consumer
-		go func() {
-			c = consumer.NewConsumer(
-				[]string{*etcdUrl},
-				"/provider",
-			)
-		}()
+		consumer.NewConsumer(
+			[]string{*etcdUrl},
+			"/provider",
+		)
 
 	}
-	for {
-		;
-	}
+	<-(chan int)(nil)
 }
