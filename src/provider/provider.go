@@ -61,8 +61,9 @@ func (p *Provider) Start() {
 
 	tcpCh := make(chan int)
 
+	var converter protocol.SimpleConverter
 	// handler for listening over tcp
-	go handleReq(ln, tcpCh)
+	go handleReq(ln, tcpCh, &converter)
 
 	go func(ch <-chan *etcdv3.LeaseKeepAliveResponse, tcpCh chan<- int) {
 		// close the tcp listener
@@ -87,16 +88,16 @@ func (p *Provider) Start() {
 	}(ch, tcpCh)
 }
 
-func handleReq(ln net.Listener, tcpCh <-chan int) {
+func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
 	defer ln.Close()
 
-	go func() {
+	go func(converter *protocol.SimpleConverter) {
 		cConn, err := ln.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		go func(cConn net.Conn) {
+		go func(cConn net.Conn, converter *protocol.SimpleConverter) {
 			defer cConn.Close()
 
 			pConn, err := net.Dial("tcp", providerAddr)
@@ -107,7 +108,6 @@ func handleReq(ln net.Listener, tcpCh <-chan int) {
 			defer pConn.Close()
 
 			var cBuffer *bytes.Buffer
-			var converter protocol.SimpleConverter
 
 			for {
 				_, err = cBuffer.ReadFrom(cConn)
@@ -162,8 +162,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int) {
 					return
 				}
 			}
-		}(cConn)
-	}()
+		}(cConn, converter)
+	}(converter)
 
 	<-tcpCh
 }
