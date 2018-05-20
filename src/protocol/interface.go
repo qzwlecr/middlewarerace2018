@@ -2,8 +2,8 @@ package protocol
 
 // Protocol : make go happy
 type Protocol interface {
-	toByteArr() (buffer []byte)
-	fromByteArr(buffer []byte)
+	ToByteArr() (buffer []byte)
+	FromByteArr(buffer []byte)
 }
 
 // Converter : make go happy

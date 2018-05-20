@@ -3,18 +3,18 @@ package protocol
 import "bytes"
 import "encoding/binary"
 
-// toByteArr : make go happy
-func (cur *CustRequest) toByteArr() (buffer []byte) {
+// ToByteArr : make go happy
+func (cur *CustRequest) ToByteArr() (buffer []byte) {
 	return cur.content
 }
 
-// fromByteArr: make go happy
-func (cur *CustRequest) fromByteArr(buffer []byte) {
+// FromByteArr: make go happy
+func (cur *CustRequest) FromByteArr(buffer []byte) {
 	cur.content = buffer
 }
 
-// toByteArr : make go happy
-func (cus *CustResponse) toByteArr() (buffer []byte) {
+// ToByteArr : make go happy
+func (cus *CustResponse) ToByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(u64buf, cus.delay)
@@ -25,8 +25,8 @@ func (cus *CustResponse) toByteArr() (buffer []byte) {
 	return pbuf.Bytes()
 }
 
-// fromByteArr: make go happy
-func (cus *CustResponse) fromByteArr(buffer []byte) {
+// FromByteArr: make go happy
+func (cus *CustResponse) FromByteArr(buffer []byte) {
 	cus.delay = binary.LittleEndian.Uint64(buffer[0:4])
 	if cus.delay != CUST_MAGIC {
 		cus.reply = buffer[4:]
@@ -35,8 +35,8 @@ func (cus *CustResponse) fromByteArr(buffer []byte) {
 	}
 }
 
-// toByteArr : make go happy
-func (dp *DubboPacks) toByteArr() (buffer []byte) {
+// ToByteArr : make go happy
+func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u16buf := make([]byte, 2)
 	u32buf := make([]byte, 4)
@@ -54,8 +54,8 @@ func (dp *DubboPacks) toByteArr() (buffer []byte) {
 	return pbuf.Bytes()
 }
 
-// fromByteArr: make go happy
-func (dp *DubboPacks) fromByteArr(buffer []byte) {
+// FromByteArr: make go happy
+func (dp *DubboPacks) FromByteArr(buffer []byte) {
 	dp.magic = binary.BigEndian.Uint16(buffer[0:2])
 	dp.reqType = uint8(buffer[2])
 	dp.status = uint8(buffer[3])
@@ -63,8 +63,8 @@ func (dp *DubboPacks) fromByteArr(buffer []byte) {
 	dp.payload = buffer[16:]
 }
 
-// toByteArr : make go happy
-func (httpack *HttpPacks) toByteArr() (buffer []byte) {
+// ToByteArr : make go happy
+func (httpack *HttpPacks) ToByteArr() (buffer []byte) {
 	assert((len(httpack.direct)^len(httpack.payload)) != 0, "HTTP packs direct & payload both exist or both non-exist.")
 	var l2buf bytes.Buffer
 	if len(httpack.direct) != 0 {
@@ -83,8 +83,8 @@ func (httpack *HttpPacks) toByteArr() (buffer []byte) {
 	return l2buf.Bytes()
 }
 
-// fromByteArr: make go happy
-func (pack *HttpPacks) fromByteArr(buffer []byte) {
+// FromByteArr: make go happy
+func (pack *HttpPacks) FromByteArr(buffer []byte) {
 	packBuf := bytes.NewBuffer(buffer)
 
 	line, err := packBuf.ReadBytes('\r')
