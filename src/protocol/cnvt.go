@@ -21,7 +21,7 @@ func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	method := httpreq.Payload["method"]
 	pmtpstr := httpreq.Payload["parameterTypesString"]
 	param := httpreq.Payload["parameter"]
-	//att := httpreq.Payload["attachments"]
+	att := httpreq.Payload["attachments"]
 	var buf bytes.Buffer
 	//TODO: Hardcode to get the first element of the array
 	buf.WriteString(interf[0])
@@ -32,7 +32,9 @@ func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	buf.WriteByte('\n')
 	buf.WriteString(param[0])
 	buf.WriteByte('\n')
-	//buf.WriteString(att[0])
+	if att != nil {
+		buf.WriteString(att[0])
+	}
 	req.Content = buf.Bytes()
 	return req
 }
@@ -63,7 +65,10 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	marshalHelper(&buf, strslice[1])
 	marshalHelper(&buf, strslice[2])
 	marshalHelper(&buf, strslice[3])
-	marshalHelper(&buf, strslice[4])
+	// this is the attachments. optional, so..
+	if len(strslice) >= 5 {
+		marshalHelper(&buf, strslice[4])
+	}
 	dubboreq.Payload = buf.Bytes()
 	return dubboreq
 }

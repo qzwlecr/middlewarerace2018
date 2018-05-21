@@ -3,8 +3,8 @@ package protocol
 import "bytes"
 import (
 	"encoding/binary"
-	"net/http"
 	"log"
+	"net/http"
 )
 
 // ToByteArr : make go happy
@@ -46,13 +46,13 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 	u32buf := make([]byte, 4)
 	u64buf := make([]byte, 8)
 	// first, the Magic
-	binary.BigEndian.PutUint16(u16buf, dp.Magic)
+	binary.LittleEndian.PutUint16(u16buf, dp.Magic)
 	pbuf.Write(u16buf)
 	pbuf.WriteByte(byte(dp.ReqType))
 	pbuf.WriteByte(byte(dp.Status))
-	binary.BigEndian.PutUint64(u64buf, dp.ReqId)
+	binary.LittleEndian.PutUint64(u64buf, dp.ReqId)
 	pbuf.Write(u64buf)
-	binary.BigEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
+	binary.LittleEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
 	pbuf.Write(u32buf)
 	pbuf.Write(dp.Payload)
 	return pbuf.Bytes()
@@ -60,16 +60,16 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 
 // FromByteArr: make go happy
 func (dp *DubboPacks) FromByteArr(buffer []byte) {
-	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
+	dp.Magic = binary.LittleEndian.Uint16(buffer[0:2])
 	dp.ReqType = uint8(buffer[2])
 	dp.Status = uint8(buffer[3])
-	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
+	dp.ReqId = binary.LittleEndian.Uint64(buffer[4:12])
 	dp.Payload = buffer[16:]
 }
 
 // ToByteArr : make go happy
 func (httpack *HttpPacks) ToByteArr() (buffer []byte) {
-	assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+	assert((len(httpack.Direct)^len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
 	var l2buf bytes.Buffer
 	if len(httpack.Direct) != 0 {
 		l2buf.WriteString(httpack.Direct)
