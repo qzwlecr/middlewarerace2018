@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -92,77 +91,84 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 	defer ln.Close()
 
 	go func(converter *protocol.SimpleConverter) {
-		cConn, err := ln.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		go func(cConn net.Conn, converter *protocol.SimpleConverter) {
-			defer cConn.Close()
-
-			pConn, err := net.Dial("tcp", providerAddr)
+		for {
+			cConn, err := ln.Accept()
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			defer pConn.Close()
+			go func(cConn net.Conn, converter *protocol.SimpleConverter) {
+				defer cConn.Close()
 
-			cBuffer := new(bytes.Buffer)
-
-			for {
-				_, err = cBuffer.ReadFrom(cConn)
-				if (err != nil && err != io.EOF) || (err == io.EOF && cBuffer.Len() == 0) {
-					log.Println(err)
-					return
-				}
-
-				cLen := binary.BigEndian.Uint32(cBuffer.Bytes())
-
-				var custReq protocol.CustRequest
-				custReq.FromByteArr(cBuffer.Bytes()[4 : 4+cLen])
-				cBuffer = bytes.NewBuffer(cBuffer.Bytes()[4+cLen:])
-
-				dubboReq := converter.CustomToDubbo(custReq)
-
-				_, err = pConn.Write(dubboReq.ToByteArr())
+				pConn, err := net.Dial("tcp", providerAddr)
 				if err != nil {
-					log.Println(err)
-					return
+					log.Fatal(err)
 				}
+
+				defer pConn.Close()
+
+				bl := make([]byte, 4)
+				io.ReadFull(cConn, bl)
+				lens := binary.BigEndian.Uint32(bl)
+
+				cbreq := make([]byte, lens)
+				io.ReadFull(cConn, cbreq)
+				log.Println("from customer")
+				log.Println(cbreq)
+
+				var cpreq protocol.CustRequest
 
 				timingBeg := time.Now()
 
-				var pBuffer bytes.Buffer
-				_, err = pBuffer.ReadFrom(pConn)
-				if err != nil {
+				cpreq.FromByteArr(cbreq)
+				dpreq := converter.CustomToDubbo(cpreq)
+				dbreq := dpreq.ToByteArr()
+
+				n, err := pConn.Write(dbreq)
+
+				if err != nil || n != len(dbreq) {
 					log.Println(err)
 					return
 				}
+
+				log.Println("to provider")
+				log.Println(dbreq)
+
+				dbh := make([]byte, 12)
+				io.ReadFull(pConn, dbh)
+				log.Println("Dubbo Head:", dbh)
+				lens = binary.BigEndian.Uint32(dbh[8:12])
+				dbrep := make([]byte, lens)
+				io.ReadFull(pConn, dbrep)
+				dbrep = append(dbh, dbrep...)
 
 				timingEnd := time.Now()
 				elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
 
-				var dubboResp protocol.DubboPacks
-				pLen := pBuffer.Len()
-				dubboResp.FromByteArr(pBuffer.Bytes())
-				custResp := converter.DubboToCustom(uint64(elapsed), dubboResp)
+				var dprep protocol.DubboPacks
+				log.Println("from provider")
+				log.Println(dbrep)
+				dprep.FromByteArr(dbrep)
+				cprep := converter.DubboToCustom(uint64(elapsed), dprep)
+				cbrep := cprep.ToByteArr()
 
-				var pLenSeq [4]byte
-				binary.BigEndian.PutUint32(pLenSeq[:], uint32(pLen))
+				binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
-				_, err = cConn.Write(pLenSeq[:])
+				_, err = cConn.Write(bl)
 				if err != nil {
 					log.Println(err)
 					return
 				}
 
-				_, err = cConn.Write(custResp.ToByteArr())
+				log.Println("to customer")
+				log.Println(cbrep)
+				_, err = cConn.Write(cbrep)
 				if err != nil {
 					log.Println(err)
 					return
 				}
-			}
-		}(cConn, converter)
+			}(cConn, converter)
+		}
 	}(converter)
 
 	<-tcpCh
