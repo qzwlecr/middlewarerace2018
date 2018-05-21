@@ -116,15 +116,20 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					return
 				}
 
+				log.Println("read done")
 				cLen := binary.BigEndian.Uint32(cBuffer.Bytes())
 
 				var custReq protocol.CustRequest
 				custReq.FromByteArr(cBuffer.Bytes()[4 : 4+cLen])
+				log.Println("from customer")
+				log.Println(cBuffer.Bytes()[4 : 4+cLen])
 				cBuffer = bytes.NewBuffer(cBuffer.Bytes()[4+cLen:])
 
 				dubboReq := converter.CustomToDubbo(custReq)
 
 				_, err = pConn.Write(dubboReq.ToByteArr())
+				log.Println("to provider")
+				log.Println(cBuffer.Bytes()[4 : 4+cLen])
 				if err != nil {
 					log.Println(err)
 					return
@@ -144,11 +149,14 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 				var dubboResp protocol.DubboPacks
 				pLen := pBuffer.Len()
+				log.Println("from provider")
+				log.Println(pBuffer.Bytes())
 				dubboResp.FromByteArr(pBuffer.Bytes())
 				custResp := converter.DubboToCustom(uint64(elapsed), dubboResp)
 
 				var pLenSeq [4]byte
 				binary.BigEndian.PutUint32(pLenSeq[:], uint32(pLen))
+				log.Println("pLenSeq", pLenSeq)
 
 				_, err = cConn.Write(pLenSeq[:])
 				if err != nil {
@@ -156,6 +164,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					return
 				}
 
+				log.Println("to customer")
+				log.Println(custResp.ToByteArr())
 				_, err = cConn.Write(custResp.ToByteArr())
 				if err != nil {
 					log.Println(err)
