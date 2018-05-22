@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const LOGGING = true
+const LOGGING = false
 
 // SimpleConverter : the converter that do something great!
 type SimpleConverter struct {
@@ -124,10 +124,10 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 	err := json.Unmarshal([]byte(strslice[0]), &rettype)
 	assert(err == nil, "unmarshalling return type: ")
 	assert(rettype == 1, "Unexpected response type: "+strconv.Itoa(rettype))
-	var retval string
+	var retval int64
 	err = json.Unmarshal([]byte(strslice[1]), &retval)
 	assert(err == nil, "Unable to unmarshal return value: ")
-	custresp.Reply = []byte(retval)
+	custresp.Reply = []byte(strslice[1])
 	return custresp
 }
 

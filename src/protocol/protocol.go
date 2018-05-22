@@ -77,23 +77,24 @@ func (dp *DubboPacks) FromByteArr(buffer []byte) {
 
 // ToByteArr : make go happy
 func (httpack *HttpPacks) ToByteArr() (buffer []byte) {
-	assert((len(httpack.Direct)^len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+	assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
 	var l2buf bytes.Buffer
 	if len(httpack.Direct) != 0 {
 		l2buf.WriteString(httpack.Direct)
 	} else {
-		cnt := 0
-		for k, v := range httpack.Payload {
-			for kk, vv := range v {
-				l2buf.WriteString(k)
-				l2buf.WriteString("=")
-				l2buf.WriteString(vv)
-				if cnt != len(httpack.Payload)-1 || kk != len(vv)-1 {
-					l2buf.WriteString("&")
-				}
-			}
-			cnt = cnt + 1
-		}
+		//cnt := 0
+		//for k, v := range httpack.Payload {
+		//	for kk, vv := range v {
+		//		l2buf.WriteString(k)
+		//		l2buf.WriteString("=")
+		//		l2buf.WriteString(vv)
+		//		if cnt != len(httpack.Payload)-1 || kk != len(vv)-1 {
+		//			l2buf.WriteString("&")
+		//		}
+		//	}
+		//	cnt = cnt + 1
+		//}
+		l2buf.Write([]byte(httpack.Payload["body"][0]))
 	}
 	return l2buf.Bytes()
 }
