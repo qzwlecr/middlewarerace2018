@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+const LOGGING = true
+
 // SimpleConverter : the converter that do something great!
 type SimpleConverter struct {
 	id uint64
@@ -83,9 +85,15 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 		marshalHelper(&buf, strslice[4])
 	}*/
 	// the real attachment!
+	if LOGGING {
+		log.Println("Attachments:")
+	}
 	for i := 4; i < len(strslice); i++ {
 		buf.WriteString(strslice[i])
 		buf.WriteByte('\n')
+		if LOGGING {
+			log.Println(strslice[i])
+		}
 	}
 	dubboreq.Payload = buf.Bytes()
 	return dubboreq
