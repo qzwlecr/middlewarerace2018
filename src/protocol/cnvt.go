@@ -32,9 +32,21 @@ func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	buf.WriteByte('\n')
 	buf.WriteString(param[0])
 	buf.WriteByte('\n')
+	// generate attachments like a boss!
+	rattach := make(map[string]string)
 	if att != nil {
-		buf.WriteString(att[0])
+		err := json.Unmarshal([]byte(att[0]), &rattach)
+		assert(err == nil, "The HTTP attach not in JSON format.")
 	}
+	// 3 attach elements should be added: dubbov, path and version
+	// path is the interface..
+	rattach["dubbo"] = DUBBO_VERSION
+	rattach["version"] = API_VERSION
+	rattach["path"] = interf[0]
+	// serialize into it
+	rser, err := json.Marshal(rattach)
+	assert(err == nil, "Attachments serialization failed.")
+	buf.Write(rser)
 	req.Content = buf.Bytes()
 	return req
 }
@@ -66,8 +78,13 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	marshalHelper(&buf, strslice[2])
 	marshalHelper(&buf, strslice[3])
 	// this is the attachments. optional, so..
-	if len(strslice) >= 5 {
+	/*if len(strslice) >= 5 {
 		marshalHelper(&buf, strslice[4])
+	}*/
+	// the real attachment!
+	for i := 4; i < len(strslice); i++ {
+		buf.WriteString(strslice[i])
+		buf.WriteByte('\n')
 	}
 	dubboreq.Payload = buf.Bytes()
 	return dubboreq
