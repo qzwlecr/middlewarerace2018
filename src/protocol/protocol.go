@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+const LOGGING = true
+
 // ToByteArr : make go happy
 func (cur *CustRequest) ToByteArr() (buffer []byte) {
 	return cur.Content
@@ -55,6 +57,12 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 	binary.LittleEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
 	pbuf.Write(u32buf)
 	pbuf.Write(dp.Payload)
+	if LOGGING {
+		log.Println("DUBB as bytes:")
+		log.Println(pbuf.Bytes())
+		log.Println("DUBB as string:")
+		log.Println(string(pbuf.Bytes()))
+	}
 	return pbuf.Bytes()
 }
 
