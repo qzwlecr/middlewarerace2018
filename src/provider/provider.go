@@ -113,8 +113,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 				cbreq := make([]byte, lens)
 				io.ReadFull(cConn, cbreq)
-				log.Println("from customer")
-				log.Println(cbreq)
+				//log.Println("from customer")
+				//log.Println(cbreq)
 
 				var cpreq protocol.CustRequest
 
@@ -131,12 +131,12 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					return
 				}
 
-				log.Println("to provider")
-				log.Println(dbreq)
+				//log.Println("to provider")
+				//log.Println(dbreq)
 
 				dbh := make([]byte, 12)
 				io.ReadFull(pConn, dbh)
-				log.Println("Dubbo Head:", dbh)
+				//log.Println("Dubbo Head:", dbh)
 				lens = binary.LittleEndian.Uint32(dbh[8:12])
 				dbrep := make([]byte, lens)
 				io.ReadFull(pConn, dbrep)
@@ -146,8 +146,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 				elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
 
 				var dprep protocol.DubboPacks
-				log.Println("from provider")
-				log.Println(dbrep)
+				//log.Println("from provider")
+				//log.Println(dbrep)
 				dprep.FromByteArr(dbrep)
 				cprep := converter.DubboToCustom(uint64(elapsed), dprep)
 				cbrep := cprep.ToByteArr()
@@ -160,8 +160,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					return
 				}
 
-				log.Println("to customer")
-				log.Println(cbrep)
+				//log.Println("to customer")
+				//log.Println(cbrep)
 				_, err = cConn.Write(cbrep)
 				if err != nil {
 					log.Println(err)
