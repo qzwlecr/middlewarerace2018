@@ -57,12 +57,12 @@ func (c *Consumer) Start() {
 //addProvider add (key,info) to the consumer's map.
 func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 	p := &Provider{
-		name: key,
-		info: *info,
+		name:  key,
+		info:  *info,
 		delay: 0,
 	}
 	c.providers[p.name] = p
-	log.Println("Some provider comes in!")
+	//log.Println("Some provider comes in!")
 }
 
 //getProviderInfo return one etcdv3.event's info(Marshaled by Json).
@@ -77,7 +77,7 @@ func getProviderInfo(kv mvccpb.KeyValue) *ProviderInfo {
 
 //watchProvider can auto update the consumer's provider-map.
 func (c *Consumer) watchProvider() {
-	log.Println("Watching provider!")
+	//log.Println("Watching provider!")
 	rangeResp, err := c.client.Get(context.TODO(), c.path, etcdv3.WithPrefix())
 	if err != nil {
 		log.Fatal(err)
@@ -85,22 +85,22 @@ func (c *Consumer) watchProvider() {
 	}
 	for _, kv := range rangeResp.Kvs {
 		info := getProviderInfo(*kv)
-		log.Println(string(kv.Key) + " " + info.IP + " is Connecting!")
+		//log.Println(string(kv.Key) + " " + info.IP + " is Connecting!")
 		c.addProvider(string(kv.Key), info)
 
 	}
-	defer log.Println("Stop watching!")
+	//defer log.Println("Stop watching!")
 	chanWatch := c.client.Watch(context.Background(), c.path, etcdv3.WithPrefix())
 	for wresp := range chanWatch {
 		for _, ev := range wresp.Events {
-			log.Println("Some event happens!")
+			//log.Println("Some event happens!")
 			switch ev.Type {
 			case etcdv3.EventTypePut:
 				info := getProviderInfo(*ev.Kv)
-				log.Println(string(ev.Kv.Key) + " " + info.IP + " is Connecting!")
+				//log.Println(string(ev.Kv.Key) + " " + info.IP + " is Connecting!")
 				c.addProvider(string(ev.Kv.Key), info)
 			case etcdv3.EventTypeDelete:
-				log.Println(string(ev.Kv.Key) + " Has Been removed!")
+				//log.Println(string(ev.Kv.Key) + " Has Been removed!")
 				delete(c.providers, string(ev.Kv.Key))
 			}
 		}
@@ -142,10 +142,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	d.Write(cbreq)
 	io.ReadFull(d, lb)
 	lens = binary.BigEndian.Uint32(lb)
-	log.Println("Reply length:", lens)
+	//log.Println("Reply length:", lens)
 	cbrep := make([]byte, lens)
 	io.ReadFull(d, cbrep)
-	log.Println("Reply content:",cbrep)
+	//log.Println("Reply content:", cbrep)
 	cprep := new(protocol.CustResponse)
 	cprep.FromByteArr(cbrep)
 	c.providers[minDelayId].delay = (c.providers[minDelayId].delay + cprep.Delay) / 2
@@ -153,6 +153,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	*hp = cnvt.CustomToHTTP(*cprep)
 
 	hb := hp.ToByteArr()
+	//log.Println("HTTP reply:", hb)
 	io.WriteString(w, string(hb))
 }
 
