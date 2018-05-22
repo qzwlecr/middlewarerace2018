@@ -134,10 +134,10 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 				//log.Println("to provider")
 				//log.Println(dbreq)
 
-				dbh := make([]byte, 12)
+				dbh := make([]byte, 16)
 				io.ReadFull(pConn, dbh)
 				//log.Println("Dubbo Head:", dbh)
-				lens = binary.BigEndian.Uint32(dbh[8:12])
+				lens = binary.BigEndian.Uint32(dbh[12:16])
 				dbrep := make([]byte, lens)
 				io.ReadFull(pConn, dbrep)
 				dbrep = append(dbh, dbrep...)
