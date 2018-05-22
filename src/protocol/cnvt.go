@@ -64,7 +64,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	dubboreq.ReqType = 0
 	dubboreq.ReqType |= (DUBBO_REQUEST | DUBBO_NEEDREPLY)
 	dubboreq.ReqType |= 6 // serialization fastjson(6)
-	dubboreq.Status = 233 // no meaning
+	dubboreq.Status = 0   // no meaning
 	dubboreq.ReqId = uint64(cnvt.id)
 	cnvt.mu.Lock()
 	cnvt.id = cnvt.id + 1
