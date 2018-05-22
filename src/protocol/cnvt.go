@@ -70,6 +70,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	cnvt.id = cnvt.id + 1
 	cnvt.mu.Unlock()
 	strslice := strings.Split(string(custreq.Content), "\n")
+	assert(len(strslice) > 4, "Attachment refill failed.")
 	var buf bytes.Buffer
 	marshalHelper(&buf, DUBBO_VERSION)
 	marshalHelper(&buf, strslice[0])
