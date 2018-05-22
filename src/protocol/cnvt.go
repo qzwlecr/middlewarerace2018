@@ -93,6 +93,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 func assert(a bool, pnstr string) {
 	if !a {
 		log.Panicln("Assertion Failed: " + pnstr)
+		panic("Assertion Failed: " + pnstr)
 	}
 }
 

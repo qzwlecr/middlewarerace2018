@@ -60,7 +60,9 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 
 // FromByteArr: make go happy
 func (dp *DubboPacks) FromByteArr(buffer []byte) {
+	assert(len(buffer) > 16, "Too short in dubbo.")
 	dp.Magic = binary.LittleEndian.Uint16(buffer[0:2])
+	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
 	dp.ReqType = uint8(buffer[2])
 	dp.Status = uint8(buffer[3])
 	dp.ReqId = binary.LittleEndian.Uint64(buffer[4:12])
