@@ -7,8 +7,6 @@ import (
 	"net/http"
 )
 
-const LOGGING = true
-
 // ToByteArr : make go happy
 func (cur *CustRequest) ToByteArr() (buffer []byte) {
 	return cur.Content
