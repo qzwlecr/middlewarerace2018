@@ -44,7 +44,7 @@ type DubboPacks struct {
 }
 
 // DUBBO_VERSION : the very version. Very Magic.
-const DUBBO_VERSION = "2.6.0"
+const DUBBO_VERSION = "2.0.1"
 
 // API_VERSION : the next very version. Magic again.
 const API_VERSION = "0.0.0"

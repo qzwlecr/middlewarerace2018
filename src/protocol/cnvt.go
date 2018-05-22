@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const LOGGING = true
+const LOGGING = false
 
 // SimpleConverter : the converter that do something great!
 type SimpleConverter struct {
