@@ -146,8 +146,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 				elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
 
 				var dprep protocol.DubboPacks
-				//log.Println("from provider")
-				//log.Println(dbrep)
+				log.Println("From provider:")
+				log.Println(dbrep)
 				dprep.FromByteArr(dbrep)
 				cprep := converter.DubboToCustom(uint64(elapsed), dprep)
 				cbrep := cprep.ToByteArr()
