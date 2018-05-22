@@ -21,7 +21,7 @@ func (cur *CustRequest) FromByteArr(buffer []byte) {
 func (cus *CustResponse) ToByteArr() (buffer []byte) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(u64buf, cus.Delay)
+	binary.BigEndian.PutUint64(u64buf, cus.Delay)
 	pbuf.Write(u64buf)
 	if cus.Delay != CUST_MAGIC {
 		pbuf.Write(cus.Reply)
@@ -31,7 +31,7 @@ func (cus *CustResponse) ToByteArr() (buffer []byte) {
 
 // FromByteArr: make go happy
 func (cus *CustResponse) FromByteArr(buffer []byte) {
-	cus.Delay = binary.LittleEndian.Uint64(buffer[0:8])
+	cus.Delay = binary.BigEndian.Uint64(buffer[0:8])
 	if cus.Delay != CUST_MAGIC {
 		cus.Reply = buffer[8:]
 	} else {
@@ -46,13 +46,13 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 	u32buf := make([]byte, 4)
 	u64buf := make([]byte, 8)
 	// first, the Magic
-	binary.LittleEndian.PutUint16(u16buf, dp.Magic)
+	binary.BigEndian.PutUint16(u16buf, dp.Magic)
 	pbuf.Write(u16buf)
 	pbuf.WriteByte(byte(dp.ReqType))
 	pbuf.WriteByte(byte(dp.Status))
-	binary.LittleEndian.PutUint64(u64buf, dp.ReqId)
+	binary.BigEndian.PutUint64(u64buf, dp.ReqId)
 	pbuf.Write(u64buf)
-	binary.LittleEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
+	binary.BigEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
 	pbuf.Write(u32buf)
 	pbuf.Write(dp.Payload)
 	if LOGGING {
@@ -67,11 +67,11 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 // FromByteArr: make go happy
 func (dp *DubboPacks) FromByteArr(buffer []byte) {
 	assert(len(buffer) > 16, "Too short in dubbo.")
-	dp.Magic = binary.LittleEndian.Uint16(buffer[0:2])
+	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
 	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
 	dp.ReqType = uint8(buffer[2])
 	dp.Status = uint8(buffer[3])
-	dp.ReqId = binary.LittleEndian.Uint64(buffer[4:12])
+	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
 	dp.Payload = buffer[16:]
 }
 
