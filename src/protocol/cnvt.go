@@ -80,7 +80,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	var buf bytes.Buffer
 	marshalHelper(&buf, DUBBO_VERSION)
 	marshalHelper(&buf, strslice[0])
-	marshalHelper(&buf, API_VERSION)
+	marshalHelper(&buf, nil)
 	marshalHelper(&buf, strslice[1])
 	marshalHelper(&buf, strslice[2])
 	marshalHelper(&buf, strslice[3])
