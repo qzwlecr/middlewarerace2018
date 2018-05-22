@@ -21,7 +21,7 @@ type SimpleConverter struct {
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	interf := httpreq.Payload["interface"]
 	method := httpreq.Payload["method"]
-	pmtpstr := strings.Split(httpreq.Payload["parameterTypesString"][0], ";")
+	pmtpstr := httpreq.Payload["parameterTypesString"]
 	param := httpreq.Payload["parameter"]
 	att := httpreq.Payload["attachments"]
 	var buf bytes.Buffer
