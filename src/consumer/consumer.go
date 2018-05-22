@@ -59,6 +59,7 @@ func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 	p := &Provider{
 		name: key,
 		info: *info,
+		delay: 0,
 	}
 	c.providers[p.name] = p
 	log.Println("Some provider comes in!")
