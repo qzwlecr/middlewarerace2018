@@ -16,13 +16,13 @@ type Converter interface {
 
 // CustRequest : make go happy
 type CustRequest struct {
-	identifier uint64
+	Identifier uint64
 	Content    []byte
 }
 
 // CustResponse : make go happy
 type CustResponse struct {
-	identifier uint64
+	Identifier uint64
 	Delay      uint64
 	Reply      []byte
 }
