@@ -151,14 +151,14 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 	} else if rettype != 1 {
 		return custresp, fmt.Errorf("unexpected response type: %d", rettype)
 	}
-	var retval string
+	var retval int64
 	err = json.Unmarshal([]byte(strslice[1]), &retval)
 	if FORCE_ASSERTION {
 		assert(err == nil, "Unable to unmarshal return value: ")
 	} else if err != nil {
 		return custresp, fmt.Errorf("unable to unmarshal dubbo return value: %s", err.Error())
 	}
-	custresp.Reply = []byte(retval)
+	custresp.Reply = []byte(strslice[1])
 	return custresp, nil
 }
 
