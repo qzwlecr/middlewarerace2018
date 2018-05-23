@@ -91,6 +91,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 	defer ln.Close()
 
 	go func(converter *protocol.SimpleConverter) {
+
 		for {
 			cConn, err := ln.Accept()
 			if err != nil {
@@ -100,86 +101,88 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			go func(cConn net.Conn, converter *protocol.SimpleConverter) {
 				defer cConn.Close()
 
-				pConn, err := net.Dial("tcp", providerAddr)
-				if err != nil {
-					log.Fatal(err)
-				}
+				for {
+					bl := make([]byte, 4)
+					io.ReadFull(cConn, bl)
+					lens := binary.BigEndian.Uint32(bl)
 
-				defer pConn.Close()
+					pConn, err := net.Dial("tcp", providerAddr)
+					if err != nil {
+						log.Fatal(err)
+					}
 
-				bl := make([]byte, 4)
-				io.ReadFull(cConn, bl)
-				lens := binary.BigEndian.Uint32(bl)
+					defer pConn.Close()
 
-				cbreq := make([]byte, lens)
-				io.ReadFull(cConn, cbreq)
-				//log.Println("from customer")
-				var cpreq protocol.CustRequest
+					cbreq := make([]byte, lens)
+					io.ReadFull(cConn, cbreq)
+					//log.Println("from customer")
+					var cpreq protocol.CustRequest
 
-				timingBeg := time.Now()
+					timingBeg := time.Now()
 
-				cpreq.FromByteArr(cbreq)
-				dpreq, err := converter.CustomToDubbo(cpreq)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				dbreq, err := dpreq.ToByteArr()
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
+					cpreq.FromByteArr(cbreq)
+					dpreq, err := converter.CustomToDubbo(cpreq)
+					if err != nil {
+						log.Fatal(err)
+						return
+					}
+					dbreq, err := dpreq.ToByteArr()
+					if err != nil {
+						log.Fatal(err)
+						return
+					}
 
-				n, err := pConn.Write(dbreq)
+					n, err := pConn.Write(dbreq)
 
-				if err != nil || n != len(dbreq) {
-					log.Println(err)
-					return
-				}
+					if err != nil || n != len(dbreq) {
+						log.Println(err)
+						return
+					}
 
-				//log.Println("to provider")
-				//log.Println(dbreq)
+					//log.Println("to provider")
+					//log.Println(dbreq)
 
-				dbh := make([]byte, 16)
-				io.ReadFull(pConn, dbh)
-				//log.Println("Dubbo Head:", dbh)
-				lens = binary.BigEndian.Uint32(dbh[12:16])
-				dbrep := make([]byte, lens)
-				io.ReadFull(pConn, dbrep)
-				dbrep = append(dbh, dbrep...)
+					dbh := make([]byte, 16)
+					io.ReadFull(pConn, dbh)
+					//log.Println("Dubbo Head:", dbh)
+					lens = binary.BigEndian.Uint32(dbh[12:16])
+					dbrep := make([]byte, lens)
+					io.ReadFull(pConn, dbrep)
+					dbrep = append(dbh, dbrep...)
 
-				timingEnd := time.Now()
-				elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
+					timingEnd := time.Now()
+					elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
 
-				var dprep protocol.DubboPacks
-				//log.Println("From provider:")
-				//log.Println(dbrep)
-				dprep.FromByteArr(dbrep)
-				cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				cbrep, err := cprep.ToByteArr()
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
+					var dprep protocol.DubboPacks
+					//log.Println("From provider:")
+					//log.Println(dbrep)
+					dprep.FromByteArr(dbrep)
+					cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
+					if err != nil {
+						log.Fatal(err)
+						return
+					}
+					cbrep, err := cprep.ToByteArr()
+					if err != nil {
+						log.Fatal(err)
+						return
+					}
 
-				binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
+					binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
-				_, err = cConn.Write(bl)
-				if err != nil {
-					log.Println(err)
-					return
-				}
+					_, err = cConn.Write(bl)
+					if err != nil {
+						log.Println(err)
+						return
+					}
 
-				//log.Println("To customer")
-				//log.Println(cbrep)
-				_, err = cConn.Write(cbrep)
-				if err != nil {
-					log.Println(err)
-					return
+					//log.Println("To customer")
+					//log.Println(cbrep)
+					_, err = cConn.Write(cbrep)
+					if err != nil {
+						log.Println(err)
+						return
+					}
 				}
 			}(cConn, converter)
 		}
