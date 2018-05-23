@@ -119,8 +119,16 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	//log.Println("HTTP Pack Payload:", hp.Payload)
 
-	cpreq := cnvt.HTTPToCustom(*hp)
-	cbreq := cpreq.ToByteArr()
+	cpreq, err := cnvt.HTTPToCustom(*hp)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	cbreq, err := cpreq.ToByteArr()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	minDelay := uint64(math.MaxUint64)
 	minDelayId := ""
@@ -150,9 +158,17 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	cprep.FromByteArr(cbrep)
 	c.providers[minDelayId].delay = (c.providers[minDelayId].delay + cprep.Delay) / 2
 
-	*hp = cnvt.CustomToHTTP(*cprep)
+	*hp, err = cnvt.CustomToHTTP(*cprep)
+	if err != nil{
+		log.Fatal(err)
+		return
+	}
 
-	hb := hp.ToByteArr()
+	hb, err := hp.ToByteArr()
+	if err != nil{
+		log.Fatal(err)
+		return
+	}
 	//log.Println("HTTP reply:", hb)
 	io.WriteString(w, string(hb))
 }

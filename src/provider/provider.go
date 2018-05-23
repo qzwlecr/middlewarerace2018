@@ -119,8 +119,16 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 				timingBeg := time.Now()
 
 				cpreq.FromByteArr(cbreq)
-				dpreq := converter.CustomToDubbo(cpreq)
-				dbreq := dpreq.ToByteArr()
+				dpreq, err := converter.CustomToDubbo(cpreq)
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
+				dbreq, err := dpreq.ToByteArr()
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
 
 				n, err := pConn.Write(dbreq)
 
@@ -147,8 +155,16 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 				//log.Println("From provider:")
 				//log.Println(dbrep)
 				dprep.FromByteArr(dbrep)
-				cprep := converter.DubboToCustom(uint64(elapsed), dprep)
-				cbrep := cprep.ToByteArr()
+				cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
+				cbrep, err := cprep.ToByteArr()
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
 
 				binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
