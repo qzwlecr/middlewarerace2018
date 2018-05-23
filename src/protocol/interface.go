@@ -16,7 +16,8 @@ type Converter interface {
 
 // CustRequest : make go happy
 type CustRequest struct {
-	Content []byte
+	identifier uint64
+	Content    []byte
 }
 
 // CustResponse : make go happy
