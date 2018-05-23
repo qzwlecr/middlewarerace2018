@@ -21,8 +21,9 @@ type CustRequest struct {
 
 // CustResponse : make go happy
 type CustResponse struct {
-	Delay uint64
-	Reply []byte
+	identifier uint64
+	Delay      uint64
+	Reply      []byte
 }
 
 // CUST_MAGIC : the ultimate Magic (TuM)
