@@ -7,20 +7,29 @@ import (
 	"encoding/json"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"net"
+	"protocol"
 )
 
 //addProvider add (key,info) to the consumer's map.
 func (c *Consumer) addProvider(key string, info *ProviderInfo) {
-	conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	var err error
 	p := &Provider{
-		name:       key,
-		info:       *info,
-		delay:      0,
-		connection: conn,
+		name:   key,
+		info:   *info,
+		delay:  0,
+		chanIn: make(chan protocol.CustRequest, queueSize),
+		conns:  make([]Connection, connsSize),
+	}
+	for _, conn := range p.conns {
+		conn.consumer = c
+		conn.provider = p
+		conn.conn, err = net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
+		if err != nil {
+			log.Fatal(err)
+		}
+		go conn.read()
+		go conn.write()
 	}
 	c.providers[p.name] = p
 	//log.Println("Some provider comes in!")

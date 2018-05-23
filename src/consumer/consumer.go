@@ -39,11 +39,39 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 
 	go c.start()
 	go c.listen()
-	//TODO: place read and write here
-	//go c.writeToProvider()
-	//go c.readFromProvider()
 
 	return c
+}
+
+func (c *Connection) write() {
+	for {
+		cpreq := <-c.provider.chanIn
+		lb := make([]byte, 4)
+		cbreq, err := cpreq.ToByteArr()
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		lens := uint32(len(cbreq))
+		binary.BigEndian.PutUint32(lb, lens)
+		c.conn.Write(append(lb, cbreq...))
+	}
+}
+
+func (c *Connection) read() {
+	for {
+		lb := make([]byte, 4)
+		io.ReadFull(c.conn, lb)
+		lens := binary.BigEndian.Uint32(lb)
+		cbrep := make([]byte, lens)
+		io.ReadFull(c.conn, cbrep)
+
+		var cprep protocol.CustResponse
+		cprep.FromByteArr(cbrep)
+		c.consumer.answer[cprep.Identifier] <- cprep.Reply
+		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
+	}
 }
 
 //Start shouldn't be called manually.
@@ -56,6 +84,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	for len(c.providers) == 0 {
 
 	}
+
 	minDelay := uint64(math.MaxUint64)
 	minDelayId := ""
 	for id, p := range c.providers {
@@ -65,54 +94,22 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var cnvt protocol.SimpleConverter
 	var hp protocol.HttpPacks
-	var cprep protocol.CustResponse
-	lb := make([]byte, 4)
 
 	hp.FromRequests(r)
 
-	cpreq, err := cnvt.HTTPToCustom(hp)
+	cpreq, err := c.cnvt.HTTPToCustom(hp)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	cbreq, err := cpreq.ToByteArr()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	id := cpreq.Identifier
+	c.providers[minDelayId].chanIn <- cpreq
 
-	d := c.providers[minDelayId].connection
+	c.answer[id] = make(chan []byte)
 
-	lens := uint32(len(cbreq))
-	binary.BigEndian.PutUint32(lb, lens)
-	d.Write(lb)
-	d.Write(cbreq)
-
-	io.ReadFull(d, lb)
-	lens = binary.BigEndian.Uint32(lb)
-	cbrep := make([]byte, lens)
-	io.ReadFull(d, cbrep)
-
-	cprep.FromByteArr(cbrep)
-
-	c.providers[minDelayId].delay = (c.providers[minDelayId].delay + cprep.Delay) / 2
-
-	hp, err = cnvt.CustomToHTTP(cprep)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	hb, err := hp.ToByteArr()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	io.WriteString(w, string(hb))
+	io.WriteString(w, string(<-c.answer[id]))
 }
 
 func (c *Consumer) listen() {
