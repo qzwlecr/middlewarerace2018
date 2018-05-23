@@ -159,6 +159,7 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 		return custresp, fmt.Errorf("unable to unmarshal dubbo return value: %s", err.Error())
 	}
 	custresp.Reply = []byte(strslice[1])
+	custresp.identifier = dubboresp.ReqId
 	return custresp, nil
 }
 
