@@ -3,22 +3,24 @@ package protocol
 import "bytes"
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 // ToByteArr : make go happy
-func (cur *CustRequest) ToByteArr() (buffer []byte) {
-	return cur.Content
+func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
+	return cur.Content, nil
 }
 
 // FromByteArr: make go happy
-func (cur *CustRequest) FromByteArr(buffer []byte) {
+func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
 	cur.Content = buffer
+	return nil
 }
 
 // ToByteArr : make go happy
-func (cus *CustResponse) ToByteArr() (buffer []byte) {
+func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(u64buf, cus.Delay)
@@ -26,21 +28,22 @@ func (cus *CustResponse) ToByteArr() (buffer []byte) {
 	if cus.Delay != CUST_MAGIC {
 		pbuf.Write(cus.Reply)
 	}
-	return pbuf.Bytes()
+	return pbuf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
-func (cus *CustResponse) FromByteArr(buffer []byte) {
+func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
 	cus.Delay = binary.BigEndian.Uint64(buffer[0:8])
 	if cus.Delay != CUST_MAGIC {
 		cus.Reply = buffer[8:]
 	} else {
 		cus.Reply = make([]byte, 0)
 	}
+	return nil
 }
 
 // ToByteArr : make go happy
-func (dp *DubboPacks) ToByteArr() (buffer []byte) {
+func (dp *DubboPacks) ToByteArr() (buffer []byte, err error) {
 	var pbuf bytes.Buffer
 	u16buf := make([]byte, 2)
 	u32buf := make([]byte, 4)
@@ -61,23 +64,36 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte) {
 		log.Println("DUBB as string:")
 		log.Println(string(pbuf.Bytes()))
 	}
-	return pbuf.Bytes()
+	return pbuf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
-func (dp *DubboPacks) FromByteArr(buffer []byte) {
-	assert(len(buffer) > 16, "Too short in dubbo.")
+func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
+	if FORCE_ASSERTION {
+		assert(len(buffer) > 16, "Too short in dubbo.")
+	} else if len(buffer) <= 16 {
+		return fmt.Errorf("Too short in dubbo frombytearr()")
+	}
 	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
-	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
+	if FORCE_ASSERTION {
+		assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
+	} else if dp.Magic != DUBBO_MAGIC {
+		return fmt.Errorf("Magic mismatch in dubbo frombytearr()")
+	}
 	dp.ReqType = uint8(buffer[2])
 	dp.Status = uint8(buffer[3])
 	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
 	dp.Payload = buffer[16:]
+	return nil
 }
 
 // ToByteArr : make go happy
-func (httpack *HttpPacks) ToByteArr() (buffer []byte) {
-	assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
+	if FORCE_ASSERTION {
+		assert((len(httpack.Direct)^len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+	} else if (len(httpack.Direct) ^ len(httpack.Payload)) == 0 {
+		return buffer, fmt.Errorf("Http direct and payload both exist or non-exist")
+	}
 	var l2buf bytes.Buffer
 	if len(httpack.Direct) != 0 {
 		l2buf.WriteString(httpack.Direct)
@@ -96,12 +112,17 @@ func (httpack *HttpPacks) ToByteArr() (buffer []byte) {
 		//}
 		l2buf.Write([]byte(httpack.Payload["body"][0]))
 	}
-	return l2buf.Bytes()
+	return l2buf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
-func (pack *HttpPacks) FromByteArr(buffer []byte) {
-	log.Panic("Maybe using unusable code.")
+func (pack *HttpPacks) FromByteArr(buffer []byte) (err error) {
+	if FORCE_ASSERTION {
+		assert(false, "Static asserted.")
+	} else {
+		assert(false, "Static asserted")
+	}
+	// log.Panic("Maybe using unusable code.")
 	//packBuf := bytes.NewBuffer(buffer)
 	//
 	//line, err := packBuf.ReadBytes('\r')
@@ -184,9 +205,11 @@ func (pack *HttpPacks) FromByteArr(buffer []byte) {
 	//if len(body) > 2 {
 	//	pack.Payload["body"] = string(body)
 	//}
+	return nil
 }
 
-func (pack *HttpPacks) FromRequests(r *http.Request) {
+func (pack *HttpPacks) FromRequests(r *http.Request) (err error) {
 	r.ParseForm()
 	pack.Payload = r.Form
+	return nil
 }

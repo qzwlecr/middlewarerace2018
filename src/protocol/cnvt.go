@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -11,6 +12,8 @@ import (
 
 const LOGGING = false
 
+const FORCE_ASSERTION = false
+
 // SimpleConverter : the converter that do something great!
 type SimpleConverter struct {
 	id uint64
@@ -18,7 +21,7 @@ type SimpleConverter struct {
 }
 
 // HTTPToCustom : TODO test.
-func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
+func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error) {
 	interf := httpreq.Payload["interface"]
 	method := httpreq.Payload["method"]
 	pmtpstr := httpreq.Payload["parameterTypesString"]
@@ -38,7 +41,11 @@ func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	rattach := make(map[string]string)
 	if att != nil {
 		err := json.Unmarshal([]byte(att[0]), &rattach)
-		assert(err == nil, "The HTTP attach not in JSON format.")
+		if FORCE_ASSERTION {
+			assert(err == nil, "The HTTP attach not in JSON format.")
+		} else if err != nil {
+			return req, fmt.Errorf("the HTTP attach not in JSON format, %s", err.Error())
+		}
 	}
 	// 3 attach elements should be added: dubbov, path and version
 	// path is the interface..
@@ -47,10 +54,14 @@ func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest) {
 	rattach["path"] = interf[0]
 	// serialize into it
 	rser, err := json.Marshal(rattach)
-	assert(err == nil, "Attachments serialization failed.")
+	if FORCE_ASSERTION {
+		assert(err == nil, "Attachments serialization failed.")
+	} else if err != nil {
+		return req, fmt.Errorf("attachments serialization failed: %s", err.Error())
+	}
 	buf.Write(rser)
 	req.Content = buf.Bytes()
-	return req
+	return req, nil
 }
 
 func marshalHelper(buf *bytes.Buffer, obj interface{}) {
@@ -60,7 +71,7 @@ func marshalHelper(buf *bytes.Buffer, obj interface{}) {
 }
 
 // CustomToDubbo : TODO test.
-func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks) {
+func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks, err error) {
 	// initialize dubbo basic structures
 	dubboreq.Magic = DUBBO_MAGIC
 	dubboreq.ReqType = 0
@@ -76,7 +87,11 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 		log.Println("SlicedStr:")
 		log.Println(strslice)
 	}
-	assert(len(strslice) > 4, "Attachment refill failed.")
+	if FORCE_ASSERTION {
+		assert(len(strslice) > 4, "Attachment refill failed.")
+	} else if len(strslice) <= 4 {
+		return dubboreq, fmt.Errorf("attachment refill failed, length not enough")
+	}
 	var buf bytes.Buffer
 	marshalHelper(&buf, DUBBO_VERSION)
 	marshalHelper(&buf, strslice[0])
@@ -100,7 +115,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 		}
 	}
 	dubboreq.Payload = buf.Bytes()
-	return dubboreq
+	return dubboreq, nil
 }
 
 func assert(a bool, pnstr string) {
@@ -111,30 +126,50 @@ func assert(a bool, pnstr string) {
 }
 
 // DubboToCustom : TODO test.
-func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse) {
+func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse, err error) {
 	custresp.Delay = extrainfo
 	if extrainfo == CUST_MAGIC {
 		custresp.Reply = make([]byte, 0)
-		return custresp
+		return custresp, nil
 	}
 	// so there are actual contents
-	assert(dubboresp.ReqType&uint8(6) != 0, "Serialization method not supported")
+	if FORCE_ASSERTION {
+		assert(dubboresp.ReqType&uint8(6) != 0, "Serialization method not supported")
+	} else if dubboresp.ReqType&uint8(6) == 0 {
+		return custresp, fmt.Errorf("unsupported serialization method: %d", dubboresp.ReqType)
+	}
 	strslice := strings.Split(string(dubboresp.Payload), "\n")
 	var rettype int
-	err := json.Unmarshal([]byte(strslice[0]), &rettype)
-	assert(err == nil, "unmarshalling return type: ")
-	assert(rettype == 1, "Unexpected response type: "+strconv.Itoa(rettype))
-	var retval int64
+	err = json.Unmarshal([]byte(strslice[0]), &rettype)
+	if FORCE_ASSERTION {
+		assert(err == nil, "unmarshalling return type: ")
+	} else if err != nil {
+		return custresp, fmt.Errorf("unmarshalling failed from dubbo: %s", err.Error())
+	}
+	if FORCE_ASSERTION {
+		assert(rettype == 1, "Unexpected response type: "+strconv.Itoa(rettype))
+	} else if rettype != 1 {
+		return custresp, fmt.Errorf("unexpected response type: %d", rettype)
+	}
+	var retval string
 	err = json.Unmarshal([]byte(strslice[1]), &retval)
-	assert(err == nil, "Unable to unmarshal return value: ")
-	custresp.Reply = []byte(strslice[1])
-	return custresp
+	if FORCE_ASSERTION {
+		assert(err == nil, "Unable to unmarshal return value: ")
+	} else if err != nil {
+		return custresp, fmt.Errorf("unable to unmarshal dubbo return value: %s", err.Error())
+	}
+	custresp.Reply = []byte(retval)
+	return custresp, nil
 }
 
 // CustomToHTTP : woo-hoo!
-func (cnvt *SimpleConverter) CustomToHTTP(resp CustResponse) (httpresp HttpPacks) {
-	assert(resp.Delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
+func (cnvt *SimpleConverter) CustomToHTTP(resp CustResponse) (httpresp HttpPacks, err error) {
+	if FORCE_ASSERTION {
+		assert(resp.Delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
+	} else if resp.Delay == CUST_MAGIC {
+		return httpresp, fmt.Errorf("attempt to convert a rejected custresp to http")
+	}
 	httpresp.Payload = make(map[string][]string)
 	httpresp.Payload["body"] = []string{string(resp.Reply)}
-	return httpresp
+	return httpresp, nil
 }

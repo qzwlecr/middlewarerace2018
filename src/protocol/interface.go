@@ -2,16 +2,16 @@ package protocol
 
 // Protocol : make go happy
 type Protocol interface {
-	ToByteArr() (buffer []byte)
-	FromByteArr(buffer []byte)
+	ToByteArr() (buffer []byte, err error)
+	FromByteArr(buffer []byte) (err error)
 }
 
 // Converter : make go happy
 type Converter interface {
-	HTTPToCustom(httpreq HttpPacks) (req CustRequest)
-	CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks)
-	DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse)
-	CustomToHTTP(resp CustResponse) (httpresp HttpPacks)
+	HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error)
+	CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks, err error)
+	DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse, err error)
+	CustomToHTTP(resp CustResponse) (httpresp HttpPacks, err error)
 }
 
 // CustRequest : make go happy
