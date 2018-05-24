@@ -44,29 +44,38 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 }
 
 func (c *Connection) write() {
+	lb := make([]byte, 4)
+	lens := uint32(0)
 	for {
 		cpreq := <-c.provider.chanIn
-		lb := make([]byte, 4)
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
 
-		lens := uint32(len(cbreq))
+		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(lb, lens)
 		c.conn.Write(append(lb, cbreq...))
 	}
 }
 
 func (c *Connection) read() {
+	lb := make([]byte, 4)
 	for {
-		lb := make([]byte, 4)
-		io.ReadFull(c.conn, lb)
+		n, err := io.ReadFull(c.conn, lb)
+		if n != 4 || err != nil {
+			log.Fatal(err)
+			return
+		}
 		lens := binary.BigEndian.Uint32(lb)
 		cbrep := make([]byte, lens)
-		io.ReadFull(c.conn, cbrep)
+		n, err = io.ReadFull(c.conn, cbrep)
 
+		if n != int(lens) || err != nil {
+			log.Fatal(err)
+			return
+		}
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
 		c.consumer.answer[cprep.Identifier] <- cprep.Reply
