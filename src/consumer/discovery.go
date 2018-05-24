@@ -28,6 +28,10 @@ func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if conn.conn == nil {
+			log.Panic("Conn boom!")
+		}
+		log.Println(conn.conn.RemoteAddr(), conn.conn.LocalAddr(), conn.conn)
 		go conn.read()
 		go conn.write()
 	}
