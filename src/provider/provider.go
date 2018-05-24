@@ -133,8 +133,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 			addCh := make(chan TMapEntry, 5)
 			delCh := make(chan [8]byte, 5)
-			getReqCh := make(chan [8]byte, 5)
-			getRetCh := make(chan time.Time, 5)
+			getReqCh := make(chan [8]byte, 1)
+			getRetCh := make(chan time.Time, 1)
 			go func(addCh <-chan TMapEntry, delCh, getReqCh <-chan [8]byte, getRetCh chan<- time.Time) {
 				tBegs := make(map[[8]byte]time.Time)
 				for {
@@ -192,7 +192,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			}(pConn, pReqMsg)
 
 			// from server read
-			go func(pConn net.Conn, pRespMsg chan<- []byte, getReqCh chan<- [8]byte, getRetCh <-chan time.Time, elapsedCh chan int64) {
+			go func(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<- [8]byte, getRetCh <-chan time.Time, elapsedCh chan int64) {
 				for {
 					dbh := make([]byte, 16)
 					_, err := io.ReadFull(pConn, dbh)
@@ -210,6 +210,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					copy(id[:], dbh[4:12])
 					getReqCh <- id
 					timingBeg := <-getRetCh
+					delCh <- id
 
 					timingEnd := time.Now()
 					elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
@@ -217,7 +218,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					elapsedCh <- elapsed
 					pRespMsg <- dbrep
 				}
-			}(pConn, pRespMsg, getReqCh, getRetCh, elapsedCh)
+			}(pConn, pRespMsg, getReqCh, delCh, getRetCh, elapsedCh)
 
 			// from provider converter
 			go func(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRespMsg chan<- []byte, elapsedCh <-chan int64) {
