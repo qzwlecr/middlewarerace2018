@@ -22,6 +22,10 @@ type SimpleConverter struct {
 
 // HTTPToCustom : TODO test.
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error) {
+	req.Identifier = cnvt.id
+	cnvt.mu.Lock()
+	cnvt.id = cnvt.id + 1
+	cnvt.mu.Unlock()
 	interf := httpreq.Payload["interface"]
 	method := httpreq.Payload["method"]
 	pmtpstr := httpreq.Payload["parameterTypesString"]
@@ -78,10 +82,7 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	dubboreq.ReqType |= (DUBBO_REQUEST | DUBBO_NEEDREPLY)
 	dubboreq.ReqType |= 6 // serialization fastjson(6)
 	dubboreq.Status = 0   // no meaning
-	dubboreq.ReqId = uint64(cnvt.id)
-	cnvt.mu.Lock()
-	cnvt.id = cnvt.id + 1
-	cnvt.mu.Unlock()
+	dubboreq.ReqId = custreq.Identifier
 	strslice := strings.Split(string(custreq.Content), "\n")
 	if LOGGING {
 		log.Println("SlicedStr:")
@@ -159,7 +160,7 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 		return custresp, fmt.Errorf("unable to unmarshal dubbo return value: %s", err.Error())
 	}
 	custresp.Reply = []byte(strslice[1])
-	custresp.identifier = dubboresp.ReqId
+	custresp.Identifier = dubboresp.ReqId
 	return custresp, nil
 }
 

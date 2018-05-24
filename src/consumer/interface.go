@@ -3,10 +3,15 @@ package consumer
 import (
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"time"
+	"protocol"
+	"net"
 )
 
-const dialTimeout = 5 * time.Second
-
+const (
+	dialTimeout = 5 * time.Second
+	queueSize = 1024
+	connsSize = 1024
+)
 type Provider struct {
 	name     string
 	etcdAddr []string
@@ -14,12 +19,21 @@ type Provider struct {
 	info     ProviderInfo
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
+	chanIn   chan protocol.CustRequest
+	conns    []Connection
+}
+
+type Connection struct {
+	conn     net.Conn
+	consumer *Consumer
+	provider *Provider
 }
 
 type Consumer struct {
 	path      string
 	etcdAddr  []string
-	chanProv  chan bool
+	cnvt      protocol.SimpleConverter
+	answer    map[uint64]chan []byte
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }

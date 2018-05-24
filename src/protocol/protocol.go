@@ -10,12 +10,18 @@ import (
 
 // ToByteArr : make go happy
 func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
-	return cur.Content, nil
+	var buf bytes.Buffer
+	idbuf := make([]byte, 8)
+	binary.BigEndian.PutUint64(idbuf, cur.Identifier)
+	buf.Write(idbuf)
+	buf.Write(cur.Content)
+	return buf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
 func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
-	cur.Content = buffer
+	cur.Identifier = binary.BigEndian.Uint64(buffer[:8])
+	cur.Content = buffer[8:]
 	return nil
 }
 
@@ -23,6 +29,8 @@ func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
 func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 	var pbuf bytes.Buffer
 	u64buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(u64buf, cus.Identifier)
+	pbuf.Write(u64buf)
 	binary.BigEndian.PutUint64(u64buf, cus.Delay)
 	pbuf.Write(u64buf)
 	if cus.Delay != CUST_MAGIC {
@@ -33,9 +41,10 @@ func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 
 // FromByteArr: make go happy
 func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
-	cus.Delay = binary.BigEndian.Uint64(buffer[0:8])
+	cus.Identifier = binary.BigEndian.Uint64(buffer[:8])
+	cus.Delay = binary.BigEndian.Uint64(buffer[8:16])
 	if cus.Delay != CUST_MAGIC {
-		cus.Reply = buffer[8:]
+		cus.Reply = buffer[16:]
 	} else {
 		cus.Reply = make([]byte, 0)
 	}
