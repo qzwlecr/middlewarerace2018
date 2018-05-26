@@ -62,6 +62,10 @@ func (c *Connection) write() {
 
 func (c *Connection) read() {
 	lb := make([]byte, 4)
+	if c.conn == nil {
+		log.Panic("Conn boom!")
+	}
+	log.Println(c.conn.RemoteAddr(), c.conn.LocalAddr(), c.conn)
 	for {
 		n, err := io.ReadFull(c.conn, lb)
 		if n != 4 || err != nil {
