@@ -29,7 +29,7 @@ func NewZhwkMemoryPool(theLength uint32) *ZhwkMemoryPool {
 	mmp.allocList = list.New()
 	for i := 0; i < INITIAL_CNT; i++ {
 		mmp.buffers[i] = BufferCond{make([]byte, mmp.clens), 0}
-		mmp.allocList.PushBack(i)
+		mmp.allocList.PushBack(uint32(i))
 	}
 	return &mmp
 }
@@ -73,7 +73,7 @@ func (mmp *ZhwkMemoryPool) Release(id uint32) (err error) {
 	defer mmp.mu.Unlock()
 	mmp.buffers[id].ref = mmp.buffers[id].ref - 1
 	if mmp.buffers[id].ref == 0 {
-		mmp.allocList.PushBack(id)
+		mmp.allocList.PushBack(uint32(id))
 	}
 	return nil
 }
