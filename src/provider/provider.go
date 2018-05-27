@@ -121,6 +121,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 					cbreq := make([]byte, lens)
 					io.ReadFull(cConn, cbreq)
 
+					log.Println("msg to cReqMsg", cbreq)
 					cReqMsg <- cbreq
 				}
 			}(cConn, cReqMsg)
@@ -153,7 +154,9 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			go func(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqMsg chan<- []byte, addCh chan<- TMapEntry) {
 				var cpreq protocol.CustRequest
 				for {
-					cpreq.FromByteArr(<-cReqMsg)
+					msg := <-cReqMsg
+					log.Println("msg from cReqMsg", msg)
+					cpreq.FromByteArr(msg)
 
 					timingBeg := time.Now()
 
