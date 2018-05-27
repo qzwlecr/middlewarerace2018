@@ -35,6 +35,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		etcdAddr:  endpoints,
 		providers: make(map[string]*Provider),
 		client:    cli,
+		answer: make(map[uint64]chan []byte),
 	}
 
 	go c.start()
