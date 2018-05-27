@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	MemoryPool "utility/mempool"
 )
+
+var mmp = MemoryPool.NewZhwkMemoryPool(20)
 
 // ToByteArr : make go happy
 func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
 	var buf bytes.Buffer
-	idbuf := make([]byte, 8)
+	bid, idbuf, err := mmp.Acquire()
+	defer mmp.Release(bid)
 	binary.BigEndian.PutUint64(idbuf, cur.Identifier)
-	buf.Write(idbuf)
+	buf.Write(idbuf[:8])
 	buf.Write(cur.Content)
 	return buf.Bytes(), nil
 }
@@ -28,11 +32,12 @@ func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
 // ToByteArr : make go happy
 func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 	var pbuf bytes.Buffer
-	u64buf := make([]byte, 8)
+	bid, u64buf, err := mmp.Acquire()
+	defer mmp.Release(bid)
 	binary.BigEndian.PutUint64(u64buf, cus.Identifier)
-	pbuf.Write(u64buf)
+	pbuf.Write(u64buf[:8])
 	binary.BigEndian.PutUint64(u64buf, cus.Delay)
-	pbuf.Write(u64buf)
+	pbuf.Write(u64buf[:8])
 	if cus.Delay != CUST_MAGIC {
 		pbuf.Write(cus.Reply)
 	}
@@ -54,18 +59,20 @@ func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
 // ToByteArr : make go happy
 func (dp *DubboPacks) ToByteArr() (buffer []byte, err error) {
 	var pbuf bytes.Buffer
-	u16buf := make([]byte, 2)
-	u32buf := make([]byte, 4)
-	u64buf := make([]byte, 8)
+	// u16buf := make([]byte, 2)
+	// u32buf := make([]byte, 4)
+	// u64buf := make([]byte, 8)
+	bid, buf, _ := mmp.Acquire()
+	defer mmp.Release(bid)
 	// first, the Magic
-	binary.BigEndian.PutUint16(u16buf, dp.Magic)
-	pbuf.Write(u16buf)
+	binary.BigEndian.PutUint16(buf, dp.Magic)
+	pbuf.Write(buf[:2])
 	pbuf.WriteByte(byte(dp.ReqType))
 	pbuf.WriteByte(byte(dp.Status))
-	binary.BigEndian.PutUint64(u64buf, dp.ReqId)
-	pbuf.Write(u64buf)
-	binary.BigEndian.PutUint32(u32buf, uint32(len(dp.Payload)))
-	pbuf.Write(u32buf)
+	binary.BigEndian.PutUint64(buf, dp.ReqId)
+	pbuf.Write(buf[:8])
+	binary.BigEndian.PutUint32(buf, uint32(len(dp.Payload)))
+	pbuf.Write(buf[:4])
 	pbuf.Write(dp.Payload)
 	if LOGGING {
 		log.Println("DUBB as bytes:")

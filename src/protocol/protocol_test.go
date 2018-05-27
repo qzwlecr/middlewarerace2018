@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"math/rand"
-	"strings"
 	"testing"
 )
 
@@ -29,7 +28,7 @@ func unmarshalHelper(spcont string, t *testing.T) string {
 	return tmp
 }
 
-func TestCustDubbo(t *testing.T) {
+/*func TestCustDubbo(t *testing.T) {
 	var cnvt SimpleConverter
 	cnvt.id = 0
 	var custreq CustRequest
@@ -75,4 +74,4 @@ func TestCustDubbo(t *testing.T) {
 	if len(strslice[7]) != 0 {
 		t.Fatal("Null mismatch, the content is: ", strslice[7])
 	}
-}
+}*/
