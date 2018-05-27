@@ -1,11 +1,11 @@
 package consumer
 
 import (
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"context"
-	"log"
 	"encoding/json"
+	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"log"
 	"net"
 	"protocol"
 )
@@ -13,7 +13,6 @@ import (
 //addProvider add (key,info) to the consumer's map.
 func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 
-	var err error
 	p := &Provider{
 		name:   key,
 		info:   *info,
@@ -21,19 +20,21 @@ func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 		chanIn: make(chan protocol.CustRequest, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
-	for _, conn := range p.conns {
-		conn.consumer = c
-		conn.provider = p
-		conn.conn, err = net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
+	for _, ec := range p.conns {
+		ec.consumer = c
+		ec.provider = p
+		newc, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
+		ec.conn = newc
+
 		if err != nil {
 			log.Fatal(err)
 		}
-		if conn.conn == nil {
-			log.Panic("Conn boom!")
+		if ec.conn == nil {
+			log.Panic("Conn boom in provider!")
 		}
-		log.Println(conn.conn.RemoteAddr(), conn.conn.LocalAddr(), conn.conn)
-		go conn.read()
-		go conn.write()
+		log.Println(ec.conn.LocalAddr())
+		go ec.read()
+		go ec.write()
 	}
 	c.providers[p.name] = p
 	//log.Println("Some provider comes in!")

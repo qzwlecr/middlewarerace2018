@@ -1,13 +1,13 @@
 package consumer
 
 import (
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"log"
-	"net/http"
-	"io"
-	"protocol"
-	"math"
 	"encoding/binary"
+	etcdv3 "github.com/coreos/etcd/clientv3"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"protocol"
 )
 
 const (
@@ -43,7 +43,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	return c
 }
 
-func (c *Connection) write() {
+func (c Connection) write() {
 	lb := make([]byte, 4)
 	lens := uint32(0)
 	for {
@@ -60,12 +60,12 @@ func (c *Connection) write() {
 	}
 }
 
-func (c *Connection) read() {
+func (c Connection) read() {
 	lb := make([]byte, 4)
 	if c.conn == nil {
-		log.Panic("Conn boom!")
+		log.Panic("Conn boom in reader!")
 	}
-	log.Println(c.conn.RemoteAddr(), c.conn.LocalAddr(), c.conn)
+	log.Println(c.conn.LocalAddr())
 	for {
 		n, err := io.ReadFull(c.conn, lb)
 		if n != 4 || err != nil {
