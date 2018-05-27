@@ -50,16 +50,20 @@ func (c Connection) write() {
 	lb := make([]byte, 4)
 	lens := uint32(0)
 	for {
-		cpreq := <-c.provider.chanIn
-		cbreq, err := cpreq.ToByteArr()
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
+		select {
+		case cpreq := <-c.provider.chanIn:
+			cbreq, err := cpreq.ToByteArr()
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
 
-		lens = uint32(len(cbreq))
-		binary.BigEndian.PutUint32(lb, lens)
-		c.conn.Write(append(lb, cbreq...))
+			lens = uint32(len(cbreq))
+			binary.BigEndian.PutUint32(lb, lens)
+			fullp := append(lb, cbreq...)
+			log.Println("Packages:", fullp)
+			c.conn.Write(fullp)
+		}
 	}
 }
 
@@ -110,6 +114,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 			minDelayId = id
 			minDelay = p.delay
 		}
+	}
+	if minDelayId == "" {
+		log.Panic("c.providers boom!")
 	}
 
 	var hp protocol.HttpPacks
