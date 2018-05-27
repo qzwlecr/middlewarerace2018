@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"protocol"
+	"sync"
 )
 
 const (
@@ -35,7 +36,8 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		etcdAddr:  endpoints,
 		providers: make(map[string]*Provider),
 		client:    cli,
-		answer: make(map[uint64]chan []byte),
+		answer:    make(map[uint64]chan []byte),
+		answerMu:  sync.RWMutex{},
 	}
 
 	go c.start()
@@ -121,7 +123,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	id := cpreq.Identifier
 	c.providers[minDelayId].chanIn <- cpreq
 
+	c.answerMu.Lock()
 	c.answer[id] = make(chan []byte)
+	c.answerMu.Unlock()
 
 	io.WriteString(w, string(<-c.answer[id]))
 }

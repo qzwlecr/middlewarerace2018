@@ -5,13 +5,15 @@ import (
 	"time"
 	"protocol"
 	"net"
+	"sync"
 )
 
 const (
 	dialTimeout = 5 * time.Second
-	queueSize = 1024
-	connsSize = 1024
+	queueSize   = 1024
+	connsSize   = 1024
 )
+
 type Provider struct {
 	name     string
 	etcdAddr []string
@@ -34,6 +36,7 @@ type Consumer struct {
 	etcdAddr  []string
 	cnvt      protocol.SimpleConverter
 	answer    map[uint64]chan []byte
+	answerMu  sync.RWMutex
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }
