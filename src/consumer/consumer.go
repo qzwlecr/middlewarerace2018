@@ -85,7 +85,9 @@ func (c Connection) read() {
 		}
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
+		c.consumer.answerMu.Lock()
 		c.consumer.answer[cprep.Identifier] <- cprep.Reply
+		c.consumer.answerMu.Unlock()
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
 	}
 }
@@ -127,7 +129,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = make(chan []byte)
 	c.answerMu.Unlock()
 
+	c.answerMu.RLock()
 	io.WriteString(w, string(<-c.answer[id]))
+	c.answerMu.RUnlock()
 }
 
 func (c *Consumer) listen() {
