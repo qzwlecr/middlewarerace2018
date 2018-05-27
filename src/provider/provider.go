@@ -267,7 +267,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 						return
 					}
 				}
-			}(cConn, cReqMsg)
+			}(cConn, cRespMsg)
 		}
 	}(converter)
 
