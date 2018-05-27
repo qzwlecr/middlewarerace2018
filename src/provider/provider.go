@@ -149,11 +149,20 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 	for {
 		bl := make([]byte, 4)
-		io.ReadFull(cConn, bl)
+		_, err := io.ReadFull(cConn, bl)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		lens := binary.BigEndian.Uint32(bl)
 
 		cbreq := make([]byte, lens)
-		io.ReadFull(cConn, cbreq)
+		_, err = io.ReadFull(cConn, cbreq)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 		log.Println("msg to cReqMsg", cbreq)
 		cReqMsg <- cbreq
