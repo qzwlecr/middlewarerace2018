@@ -212,6 +212,7 @@ func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 	for {
 		dbReq := <-pReqMsg
 
+		log.Println("out", dbReq)
 		n, err := pConn.Write(dbReq)
 
 		if err != nil || n != len(dbReq) {
