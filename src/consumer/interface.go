@@ -1,17 +1,18 @@
 package consumer
 
 import (
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"time"
-	"protocol"
 	"net"
+	"protocol"
 	"sync"
+	"time"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
 const (
 	dialTimeout = 5 * time.Second
 	queueSize   = 1024
-	connsSize   = 1024
+	connsSize   = 100
 )
 
 type Provider struct {
