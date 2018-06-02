@@ -103,7 +103,6 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println("connection accepted")
 
 			// cConn.Close()
 
@@ -234,7 +233,11 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<-
 		//log.Println("Dubbo Head:", dbh)
 		lens := binary.BigEndian.Uint32(dbh[12:16])
 		dbrep := make([]byte, lens)
-		io.ReadFull(pConn, dbrep)
+		_, err = io.ReadFull(pConn, dbrep)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		dbrep = append(dbh, dbrep...)
 
 		var id [8]byte
