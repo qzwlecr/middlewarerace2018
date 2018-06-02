@@ -299,8 +299,7 @@ func clientWrite(cConn net.Conn, cRespMsg <-chan []byte) {
 			return
 		}
 
-		//log.Println("To customer")
-		//log.Println(cbrep)
+		log.Println("to customer", cbrep)
 		_, err = cConn.Write(cbrep)
 		if err != nil {
 			log.Println(err)
