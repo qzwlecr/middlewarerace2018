@@ -152,7 +152,7 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		bl := make([]byte, 4)
 		_, err := io.ReadFull(cConn, bl)
 		if err != nil {
-			log.Println("failed to read length", err)
+			// log.Println("failed to read length", err)
 			return
 		}
 
@@ -261,6 +261,7 @@ func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRes
 		elapsed := <-elapsedCh
 		dprep.FromByteArr(<-pRespMsg)
 		cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
+		log.Println(cprep)
 		if err != nil {
 			log.Fatal(err)
 			return
