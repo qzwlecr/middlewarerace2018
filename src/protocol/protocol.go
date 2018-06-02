@@ -103,6 +103,24 @@ func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
 	return nil
 }
 
+// CheckFormat check if the pack format is correct.
+func (dp *DubboPacks) CheckFormat(buffer []byte) (err error) {
+	assert(len(buffer) > 16, "Too short in dubbo.")
+	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
+	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
+	dp.ReqType = uint8(buffer[2])
+	assert(dp.ReqType&DUBBO_REQUEST != 0, "Not a request.")
+	assert(dp.ReqType&DUBBO_NEEDREPLY != 0, "Not 2-way.")
+	assert(dp.ReqType&DUBBO_EVENT == 0, "Is a event.")
+	assert(dp.ReqType&0x6 != 0, "Serialization type gg.")
+	dp.Status = uint8(buffer[3])
+	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
+	payloadlen := binary.BigEndian.Uint32(buffer[12:16])
+	dp.Payload = buffer[16:]
+	assert(len(dp.Payload) == int(payloadlen), "Dynamic length part mismatched.")
+	return nil
+}
+
 // ToByteArr : make go happy
 func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
 	if FORCE_ASSERTION {
