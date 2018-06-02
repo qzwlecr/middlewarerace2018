@@ -259,9 +259,11 @@ func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRes
 		//log.Println("From provider:")
 		//log.Println(dbrep)
 		elapsed := <-elapsedCh
-		dprep.FromByteArr(<-pRespMsg)
+		// dprep.FromByteArr(<-pRespMsg)
+		msg := <-pRespMsg
+		dprep.FromByteArr(msg)
 		cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
-		log.Println(cprep)
+		log.Println("msg", msg, cprep)
 		if err != nil {
 			log.Fatal(err)
 			return
