@@ -151,8 +151,9 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		bl := make([]byte, 4)
 		_, err := io.ReadFull(cConn, bl)
 		if err != nil {
-			log.Println(err)
-			return
+			log.Println("failed to read length", err)
+			continue
+			// return
 		}
 
 		lens := binary.BigEndian.Uint32(bl)
@@ -160,8 +161,9 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		cbreq := make([]byte, lens)
 		_, err = io.ReadFull(cConn, cbreq)
 		if err != nil {
-			log.Println(err)
-			return
+			log.Println("failed to read content", err)
+			continue
+			// return
 		}
 
 		log.Println("msg to cReqMsg", cbreq)
