@@ -103,6 +103,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			if err != nil {
 				log.Fatal(err)
 			}
+			log.Println("connection accepted")
 
 			// cConn.Close()
 
@@ -147,13 +148,13 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 }
 
 func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
+	defer cConn.Close()
 	for {
 		bl := make([]byte, 4)
 		_, err := io.ReadFull(cConn, bl)
 		if err != nil {
 			log.Println("failed to read length", err)
-			continue
-			// return
+			return
 		}
 
 		lens := binary.BigEndian.Uint32(bl)
@@ -162,8 +163,7 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		_, err = io.ReadFull(cConn, cbreq)
 		if err != nil {
 			log.Println("failed to read content", err)
-			continue
-			// return
+			return
 		}
 
 		log.Println("msg to cReqMsg", cbreq)
