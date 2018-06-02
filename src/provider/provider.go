@@ -200,6 +200,11 @@ func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqM
 			log.Fatal(err)
 		}
 
+		err = dpreq.CheckFormat(dbreq)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		var entry tMapEntry
 		entry.tBeg = timingBeg
 		copy(entry.id[:], dbreq[4:12])
