@@ -3,10 +3,10 @@ package consumer
 import (
 	"net"
 	"protocol"
-	"sync"
 	"time"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
+	"sync"
 )
 
 const (
@@ -36,8 +36,7 @@ type Consumer struct {
 	path      string
 	etcdAddr  []string
 	cnvt      protocol.SimpleConverter
-	answer    map[uint64]chan []byte
-	answerMu  sync.Mutex
+	answer    sync.Map
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }

@@ -8,7 +8,6 @@ import (
 	"math"
 	"net/http"
 	"protocol"
-	"sync"
 )
 
 const (
@@ -36,8 +35,6 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		etcdAddr:  endpoints,
 		providers: make(map[string]*Provider),
 		client:    cli,
-		answer:    make(map[uint64]chan []byte),
-		answerMu:  sync.Mutex{},
 	}
 
 	go c.start()
@@ -90,10 +87,9 @@ func (c Connection) read() {
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
 		log.Println("Read Packages:", cbrep)
-		c.consumer.answerMu.Lock()
 		log.Println("Writing answers to map:")
-		c.consumer.answer[cprep.Identifier] <- cprep.Reply
-		c.consumer.answerMu.Unlock()
+		ch, _:= c.consumer.answer.Load(cprep.Identifier)
+		ch.(chan []byte) <- cprep.Reply
 		log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
 	}
@@ -135,13 +131,12 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	id := cpreq.Identifier
 	c.providers[minDelayId].chanIn <- cpreq
 
-	c.answerMu.Lock()
-	c.answer[id] = make(chan []byte)
-	c.answerMu.Unlock()
+	ch := make(chan []byte)
+	c.answer.LoadOrStore(id,ch)
 
 	log.Println("Waiting for reading.")
 
-	io.WriteString(w, string(<-c.answer[id]))
+	io.WriteString(w, string(<-ch))
 	log.Println("all things have been done.")
 }
 
