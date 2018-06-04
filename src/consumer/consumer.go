@@ -61,7 +61,7 @@ func (c Connection) write() {
 			lens = uint32(len(cbreq))
 			binary.BigEndian.PutUint32(lb, lens)
 			fullp := append(lb, cbreq...)
-			log.Println("Packages:", fullp)
+			log.Println("Write Packages:", fullp)
 			c.conn.Write(fullp)
 		}
 	}
@@ -89,6 +89,7 @@ func (c Connection) read() {
 		}
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
+		log.Println("Read Packages:", cbrep)
 		c.consumer.answerMu.Lock()
 		c.consumer.answer[cprep.Identifier] <- cprep.Reply
 		c.consumer.answerMu.Unlock()

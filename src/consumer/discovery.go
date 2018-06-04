@@ -32,7 +32,7 @@ func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 		if ec.conn == nil {
 			log.Panic("Conn boom in provider!")
 		}
-		log.Println(ec.conn.LocalAddr())
+		//log.Println(ec.conn.LocalAddr())
 		go ec.read()
 		go ec.write()
 	}
