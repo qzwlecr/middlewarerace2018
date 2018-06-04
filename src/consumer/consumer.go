@@ -137,9 +137,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = make(chan []byte)
 	c.answerMu.Unlock()
 
-	c.answerMu.RLock()
 	io.WriteString(w, string(<-c.answer[id]))
-	c.answerMu.RUnlock()
 }
 
 func (c *Consumer) listen() {
