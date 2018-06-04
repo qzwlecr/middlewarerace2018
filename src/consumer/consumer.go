@@ -37,7 +37,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		providers: make(map[string]*Provider),
 		client:    cli,
 		answer:    make(map[uint64]chan []byte),
-		answerMu:  sync.RWMutex{},
+		answerMu:  sync.Mutex{},
 	}
 
 	go c.start()
@@ -72,7 +72,7 @@ func (c Connection) read() {
 	if c.conn == nil {
 		log.Panic("Conn boom in reader!")
 	}
-	log.Println(c.conn.LocalAddr())
+	//log.Println(c.conn.LocalAddr())
 	for {
 		n, err := io.ReadFull(c.conn, lb)
 		if n != 4 || err != nil {
@@ -91,8 +91,10 @@ func (c Connection) read() {
 		cprep.FromByteArr(cbrep)
 		log.Println("Read Packages:", cbrep)
 		c.consumer.answerMu.Lock()
+		log.Println("Writing answers to map:")
 		c.consumer.answer[cprep.Identifier] <- cprep.Reply
 		c.consumer.answerMu.Unlock()
+		log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
 	}
 }
@@ -137,7 +139,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = make(chan []byte)
 	c.answerMu.Unlock()
 
+	log.Println("Waiting for reading.")
+
 	io.WriteString(w, string(<-c.answer[id]))
+	log.Println("all things have been done.")
 }
 
 func (c *Consumer) listen() {

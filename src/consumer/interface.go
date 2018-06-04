@@ -37,7 +37,7 @@ type Consumer struct {
 	etcdAddr  []string
 	cnvt      protocol.SimpleConverter
 	answer    map[uint64]chan []byte
-	answerMu  sync.RWMutex
+	answerMu  sync.Mutex
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }
