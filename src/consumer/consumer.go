@@ -75,12 +75,12 @@ func (c Connection) read() {
 	}
 	//log.Println(c.conn.LocalAddr())
 	for {
-		ti := time.Now()
 		n, err := io.ReadFull(c.conn, lb)
 		if n != 4 || err != nil {
 			log.Fatal(err)
 			return
 		}
+		ti := time.Now()
 		lens := binary.BigEndian.Uint32(lb)
 		cbrep := make([]byte, lens)
 		n, err = io.ReadFull(c.conn, cbrep)
