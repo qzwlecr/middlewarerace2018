@@ -8,11 +8,13 @@ import (
 	"log"
 	"net"
 	"protocol"
+	"utility/timing"
+	"time"
 )
 
 //addProvider add (key,info) to the consumer's map.
 func (c *Consumer) addProvider(key string, info *ProviderInfo) {
-
+	defer timing.Since(time.Now(), "[INFO]Add Provider:")
 	p := &Provider{
 		name:   key,
 		info:   *info,

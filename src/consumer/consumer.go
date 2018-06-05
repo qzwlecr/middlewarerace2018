@@ -8,6 +8,8 @@ import (
 	"math"
 	"net/http"
 	"protocol"
+	"time"
+	"utility/timing"
 )
 
 const (
@@ -49,6 +51,7 @@ func (c Connection) write() {
 	for {
 		select {
 		case cpreq := <-c.provider.chanIn:
+			ti := time.Now()
 			cbreq, err := cpreq.ToByteArr()
 			if err != nil {
 				log.Fatal(err)
@@ -60,6 +63,7 @@ func (c Connection) write() {
 			fullp := append(lb, cbreq...)
 			//log.Println("Write Packages:", fullp)
 			c.conn.Write(fullp)
+			timing.Since(ti, "[INFO]Writing: ")
 		}
 	}
 }
@@ -71,6 +75,7 @@ func (c Connection) read() {
 	}
 	//log.Println(c.conn.LocalAddr())
 	for {
+		ti := time.Now()
 		n, err := io.ReadFull(c.conn, lb)
 		if n != 4 || err != nil {
 			log.Fatal(err)
@@ -92,6 +97,7 @@ func (c Connection) read() {
 		ch.(chan []byte) <- cprep.Reply
 		//log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
+		timing.Since(ti, "[INFO]Reading: ")
 	}
 }
 
@@ -102,6 +108,7 @@ func (c *Consumer) start() {
 }
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
+	defer timing.Since(time.Now(), "[INFO]Client handling:")
 	for len(c.providers) == 0 {
 
 	}
