@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+	"utility/timing"
 )
 
 const LOGGING = false
@@ -22,6 +24,7 @@ type SimpleConverter struct {
 
 // HTTPToCustom : TODO test.
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error) {
+	defer timing.Since(time.Now(), "CNVT HTTPToCust")
 	req.Identifier = cnvt.id
 	cnvt.mu.Lock()
 	cnvt.id = cnvt.id + 1
@@ -76,6 +79,7 @@ func marshalHelper(buf *bytes.Buffer, obj interface{}) {
 
 // CustomToDubbo : TODO test.
 func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboPacks, err error) {
+	defer timing.Since(time.Now(), "CNVT CustToDubb")
 	// initialize dubbo basic structures
 	dubboreq.Magic = DUBBO_MAGIC
 	dubboreq.ReqType = 0
@@ -128,6 +132,7 @@ func assert(a bool, pnstr string) {
 
 // DubboToCustom : TODO test.
 func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse, err error) {
+	defer timing.Since(time.Now(), "CNVT DubbToCust")
 	custresp.Delay = extrainfo
 	if extrainfo == CUST_MAGIC {
 		custresp.Reply = make([]byte, 0)
@@ -166,6 +171,7 @@ func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPack
 
 // CustomToHTTP : woo-hoo!
 func (cnvt *SimpleConverter) CustomToHTTP(resp CustResponse) (httpresp HttpPacks, err error) {
+	defer timing.Since(time.Now(), "CNVT CustToHTTP")
 	if FORCE_ASSERTION {
 		assert(resp.Delay != CUST_MAGIC, "Attempt to convert a rejected response to HTTP.")
 	} else if resp.Delay == CUST_MAGIC {
