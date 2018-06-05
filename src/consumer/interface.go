@@ -11,8 +11,8 @@ import (
 
 const (
 	dialTimeout = 5 * time.Second
-	queueSize   = 409600
-	connsSize   = 1024
+	queueSize   = 16
+	connsSize   = 32
 )
 
 type Provider struct {

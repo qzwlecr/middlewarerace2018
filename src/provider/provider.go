@@ -113,15 +113,15 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 			// pConn.Close()
 
 			// from client read
-			cReqMsg := make(chan []byte, 1024)
-			pReqMsg := make(chan []byte, 1024)
-			cRespMsg := make(chan []byte, 1024)
-			pRespMsg := make(chan []byte, 1024)
-			elapsedCh := make(chan int64, 1024)
+			cReqMsg := make(chan []byte, 10)
+			pReqMsg := make(chan []byte, 10)
+			cRespMsg := make(chan []byte, 10)
+			pRespMsg := make(chan []byte, 10)
+			elapsedCh := make(chan int64, 10)
 			go clientRead(cConn, cReqMsg)
 
-			addCh := make(chan tMapEntry, 1024)
-			delCh := make(chan [8]byte, 1024)
+			addCh := make(chan tMapEntry, 5)
+			delCh := make(chan [8]byte, 5)
 			getReqCh := make(chan [8]byte, 1)
 			getRetCh := make(chan time.Time, 1)
 			go convertRequest(addCh, delCh, getReqCh, getRetCh)
