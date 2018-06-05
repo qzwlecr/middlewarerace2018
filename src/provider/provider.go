@@ -152,7 +152,7 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		bl := make([]byte, 4)
 		_, err := io.ReadFull(cConn, bl)
 		if err != nil {
-			// log.Println("failed to read length", err)
+			log.Println("failed to read length", err)
 			return
 		}
 
@@ -165,7 +165,7 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 			return
 		}
 
-		log.Println("msg to cReqMsg", cbreq)
+		//log.Println("msg to cReqMsg", cbreq)
 		cReqMsg <- cbreq
 	}
 }
@@ -186,7 +186,7 @@ func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqM
 	var cpreq protocol.CustRequest
 	for {
 		msg := <-cReqMsg
-		log.Println("msg from cReqMsg", msg)
+		//log.Println("msg from cReqMsg", msg)
 		cpreq.FromByteArr(msg)
 
 		timingBeg := time.Now()
@@ -217,7 +217,7 @@ func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 	for {
 		dbReq := <-pReqMsg
 
-		log.Println("out", dbReq)
+		//log.Println("out", dbReq)
 		n, err := pConn.Write(dbReq)
 
 		if err != nil || n != len(dbReq) {
@@ -269,7 +269,7 @@ func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRes
 		msg := <-pRespMsg
 		dprep.FromByteArr(msg)
 		cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
-		log.Println("msg", msg, cprep)
+		//log.Println("msg", msg, cprep)
 		if err != nil {
 			// log.Fatal(err)
 			// return
@@ -299,7 +299,7 @@ func clientWrite(cConn net.Conn, cRespMsg <-chan []byte) {
 			return
 		}
 
-		log.Println("to customer", cbrep)
+		//log.Println("to customer", cbrep)
 		_, err = cConn.Write(cbrep)
 		if err != nil {
 			log.Println(err)

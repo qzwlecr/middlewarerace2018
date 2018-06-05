@@ -58,7 +58,7 @@ func (c Connection) write() {
 			lens = uint32(len(cbreq))
 			binary.BigEndian.PutUint32(lb, lens)
 			fullp := append(lb, cbreq...)
-			log.Println("Write Packages:", fullp)
+			//log.Println("Write Packages:", fullp)
 			c.conn.Write(fullp)
 		}
 	}
@@ -86,11 +86,11 @@ func (c Connection) read() {
 		}
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
-		log.Println("Read Packages:", cbrep)
-		log.Println("Writing answers to map:")
+		//log.Println("Read Packages:", cbrep)
+		//log.Println("Writing answers to map:")
 		ch, _:= c.consumer.answer.Load(cprep.Identifier)
 		ch.(chan []byte) <- cprep.Reply
-		log.Println("Writing answers to map Done.")
+		//log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
 	}
 }
@@ -134,10 +134,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	ch := make(chan []byte)
 	c.answer.LoadOrStore(id,ch)
 
-	log.Println("Waiting for reading.")
+	//log.Println("Waiting for reading.")
 
 	io.WriteString(w, string(<-ch))
-	log.Println("all things have been done.")
+	//log.Println("all things have been done.")
 }
 
 func (c *Consumer) listen() {
