@@ -109,14 +109,14 @@ func (c *Consumer) start() {
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	defer timing.Since(time.Now(), "[INFO]Client handling:")
-	for len(c.providers) == 0 {
-
+	if len(c.providers) == 0 {
+		return
 	}
 
 	minDelay := uint64(math.MaxUint64)
 	minDelayId := ""
 	for id, p := range c.providers {
-		log.Println("[INFO]Providers info:", p.info.IP, "  ", p.delay)
+		//log.Println("[INFO]Providers info:", p.info.IP, "  ", p.delay)
 		if minDelay > p.delay {
 			minDelayId = id
 			minDelay = p.delay
@@ -137,10 +137,11 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := cpreq.Identifier
-	c.providers[minDelayId].chanIn <- cpreq
 
 	ch := make(chan []byte)
 	c.answer.LoadOrStore(id, ch)
+	c.providers[minDelayId].chanIn <- cpreq
+	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
 	//log.Println("Waiting for reading.")
 
