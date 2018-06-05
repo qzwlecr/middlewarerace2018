@@ -93,7 +93,7 @@ func (c Connection) read() {
 		cprep.FromByteArr(cbrep)
 		//log.Println("Read Packages:", cbrep)
 		//log.Println("Writing answers to map:")
-		ch, _:= c.consumer.answer.Load(cprep.Identifier)
+		ch, _ := c.consumer.answer.Load(cprep.Identifier)
 		ch.(chan []byte) <- cprep.Reply
 		//log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
@@ -116,6 +116,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	minDelay := uint64(math.MaxUint64)
 	minDelayId := ""
 	for id, p := range c.providers {
+		log.Println("[INFO]Providers info:", p.info.IP, "  ", p.delay)
 		if minDelay > p.delay {
 			minDelayId = id
 			minDelay = p.delay
@@ -139,7 +140,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.providers[minDelayId].chanIn <- cpreq
 
 	ch := make(chan []byte)
-	c.answer.LoadOrStore(id,ch)
+	c.answer.LoadOrStore(id, ch)
 
 	//log.Println("Waiting for reading.")
 
