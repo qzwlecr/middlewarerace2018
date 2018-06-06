@@ -8,7 +8,7 @@ const (
 	logger      = false
 	dialTimeout = 5 * time.Second
 	queueSize   = 1024
-	connsSize   = 256
+	connsSize   = 1024
 )
 
 type ProviderInfo struct {
