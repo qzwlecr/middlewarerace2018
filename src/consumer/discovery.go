@@ -3,28 +3,45 @@ package consumer
 import (
 	"context"
 	"encoding/json"
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"log"
 	"net"
 	"protocol"
 	"utility/timing"
 	"time"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
+type Provider struct {
+	name     string
+	etcdAddr []string
+	delay    uint64
+	info     ProviderInfo
+	leaseId  etcdv3.LeaseID
+	client   *etcdv3.Client
+	chanIn   chan protocol.CustRequest
+	conns    []Connection
+	active   uint32
+	weight   uint32
+}
+
 //addProvider add (key,info) to the consumer's map.
-func (c *Consumer) addProvider(key string, info *ProviderInfo) {
+func (c *Consumer) addProvider(key string, info ProviderInfo) {
 	defer timing.Since(time.Now(), "[INFO]Add Provider:")
 	p := &Provider{
 		name:   key,
-		info:   *info,
+		info:   info,
 		delay:  0,
+		weight: info.Weight,
+		active: 0,
 		chanIn: make(chan protocol.CustRequest, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p
+		ec.isActive = false
 		newc, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
 		ec.conn = newc
 
@@ -34,18 +51,16 @@ func (c *Consumer) addProvider(key string, info *ProviderInfo) {
 		if ec.conn == nil {
 			log.Panic("Conn boom in provider!")
 		}
-		//log.Println(ec.conn.LocalAddr())
 		go ec.read()
 		go ec.write()
 	}
 	c.providers[p.name] = p
-	//log.Println("Some provider comes in!")
 }
 
 //getProviderInfo return one etcdv3.event's info(Marshaled by Json).
-func getProviderInfo(kv mvccpb.KeyValue) *ProviderInfo {
-	info := &ProviderInfo{}
-	err := json.Unmarshal([]byte(kv.Value), info)
+func getProviderInfo(kv mvccpb.KeyValue) ProviderInfo {
+	info := ProviderInfo{}
+	err := json.Unmarshal([]byte(kv.Value), &info)
 	if err != nil {
 		log.Fatal(err)
 	}

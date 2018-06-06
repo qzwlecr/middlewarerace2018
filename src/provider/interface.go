@@ -21,6 +21,5 @@ type Provider struct {
 
 type ProviderInfo struct {
 	IP     string
-	CPU    int
-	Memory int
+	Weight uint32
 }

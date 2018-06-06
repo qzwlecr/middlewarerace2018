@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"log"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 )
 
 func GetLocalIP() string {
@@ -29,7 +29,7 @@ func GetLocalIP() string {
 func main() {
 	logsDir := flag.String("l", "/root/logs", "")
 	etcdUrl := flag.String("u", "http://etcd:2379", "")
-	memory := flag.Int("m", 1536, "")
+	weight := flag.Uint("w", 1, "")
 	types := flag.String("t", "provider", "")
 	name := flag.String("n", "small", "")
 	flag.Parse()
@@ -46,9 +46,8 @@ func main() {
 			[]string{*etcdUrl},
 			"/provider/" + *name,
 			provider.ProviderInfo{
-				//TODO
 				IP:     GetLocalIP(),
-				Memory: *memory,
+				Weight: uint32(*weight),
 			},
 		)
 

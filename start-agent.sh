@@ -8,19 +8,19 @@ echo ETCD_URL = $ETCD_URL
 
 if [[ "$1" == "consumer" ]]; then
   echo "Starting consumer agent..."
-  /root/dists/agent -m=1536 -t=consumer
+  /root/dists/agent -t=consumer -n=normal
 
 elif [[ "$1" == "provider-small" ]]; then
   echo "Starting small provider agent..."
-  /root/dists/agent -m=768 -t=provider -n=small
+  /root/dists/agent -w=1 -t=provider -n=small
 
 elif [[ "$1" == "provider-medium" ]]; then
   echo "Starting medium provider agent..."
-  /root/dists/agent -m=768 -t=provider -n=medium
+  /root/dists/agent -w=3 -t=provider -n=medium
 
 elif [[ "$1" == "provider-large" ]]; then
   echo "Starting large provider agent..."
-  /root/dists/agent -m=768 -t=provider -n=large
+  /root/dists/agent -w=4 -t=provider -n=large
 
 else
   echo "Unrecognized arguments, exit."
