@@ -9,6 +9,7 @@ import (
 	"net"
 	"protocol"
 	"time"
+	"utility/timing"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
@@ -99,6 +100,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 	go func(converter *protocol.SimpleConverter) {
 
 		for {
+			tm := time.Now()
 			cConn, err := ln.Accept()
 			if err != nil {
 				log.Fatal(err)
@@ -140,6 +142,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 			// to client write
 			go clientWrite(cConn, cRespMsg)
+			timing.Since(tm, "HAND Provider//HandleReq < EACH")
 		}
 	}(converter)
 
@@ -149,6 +152,7 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 	defer cConn.Close()
 	for {
+		tm := time.Now()
 		bl := make([]byte, 4)
 		_, err := io.ReadFull(cConn, bl)
 		if err != nil {
@@ -167,11 +171,13 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 
 		//log.Println("msg to cReqMsg", cbreq)
 		cReqMsg <- cbreq
+		timing.Since(tm, "READ Provider//clientRead < EACH Req")
 	}
 }
 func convertRequest(addCh <-chan tMapEntry, delCh, getReqCh <-chan [8]byte, getRetCh chan<- time.Time) {
 	tBegs := make(map[[8]byte]time.Time)
 	for {
+		tm := time.Now()
 		select {
 		case entry := <-addCh:
 			tBegs[entry.id] = entry.tBeg
@@ -180,11 +186,13 @@ func convertRequest(addCh <-chan tMapEntry, delCh, getReqCh <-chan [8]byte, getR
 		case id := <-getReqCh:
 			getRetCh <- tBegs[id]
 		}
+		timing.Since(tm, "CNVT Provider//convertRequest < EACH Req")
 	}
 }
 func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqMsg chan<- []byte, addCh chan<- tMapEntry) {
 	var cpreq protocol.CustRequest
 	for {
+		tm := time.Now()
 		msg := <-cReqMsg
 		//log.Println("msg from cReqMsg", msg)
 		cpreq.FromByteArr(msg)
@@ -211,10 +219,12 @@ func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqM
 		addCh <- entry
 
 		pReqMsg <- dbreq
+		timing.Since(tm, "CNVT Provider//convertRequest < EACH Req")
 	}
 }
 func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 	for {
+		tm := time.Now()
 		dbReq := <-pReqMsg
 
 		//log.Println("out", dbReq)
@@ -226,10 +236,12 @@ func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 		}
 		//log.Println("to provider")
 		//log.Println(dbreq)
+		timing.Since(tm, "WRIT Provider//providerWrite < EACH Req")
 	}
 }
 func providerRead(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<- [8]byte, getRetCh <-chan time.Time, elapsedCh chan int64) {
 	for {
+		tm := time.Now()
 		dbh := make([]byte, 16)
 		_, err := io.ReadFull(pConn, dbh)
 		if err != nil {
@@ -257,11 +269,13 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<-
 
 		elapsedCh <- elapsed
 		pRespMsg <- dbrep
+		timing.Since(tm, "READ Provider//providerRead < EACH Req")
 	}
 }
 func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRespMsg chan<- []byte, elapsedCh <-chan int64) {
 	var dprep protocol.DubboPacks
 	for {
+		tm := time.Now()
 		//log.Println("From provider:")
 		//log.Println(dbrep)
 		elapsed := <-elapsedCh
@@ -285,10 +299,12 @@ func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRes
 		}
 
 		cRespMsg <- cbrep
+		timing.Since(tm, "CNVT Provider//tcConvert < EACH Req")
 	}
 }
 func clientWrite(cConn net.Conn, cRespMsg <-chan []byte) {
 	for {
+		tm := time.Now()
 		bl := make([]byte, 4)
 		cbrep := <-cRespMsg
 		binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
@@ -305,6 +321,7 @@ func clientWrite(cConn net.Conn, cRespMsg <-chan []byte) {
 			log.Println(err)
 			return
 		}
+		timing.Since(tm, "WRIT Provider//clientWrite < EACH Req")
 	}
 }
 
