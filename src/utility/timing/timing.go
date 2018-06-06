@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-const TIME_LOGGING = true
-const TOT_LOGGING = true
+const TIME_LOGGING = false
+const TOT_LOGGING = false
 
 // sample usage:
 // in some func: defer timing.Since(time.Now(), "LOL")
