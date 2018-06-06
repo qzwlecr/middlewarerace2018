@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"protocol"
 	"time"
@@ -114,18 +113,18 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	minDelay := uint64(math.MaxUint64)
-	minDelayId := ""
-	for id, p := range c.providers {
-		//log.Println("[INFO]Providers info:", p.info.IP, "  ", p.delay)
-		if minDelay > p.delay {
-			minDelayId = id
-			minDelay = p.delay
-		}
-	}
-	if minDelayId == "" {
-		log.Panic("c.providers boom!")
-	}
+	//minDelay := uint64(math.MaxUint64)
+	//minDelayId := ""
+	//for id, p := range c.providers {
+	//	//log.Println("[INFO]Providers info:", p.info.IP, "  ", p.delay)
+	//	if minDelay > p.delay {
+	//		minDelayId = id
+	//		minDelay = p.delay
+	//	}
+	//}
+	//if minDelayId == "" {
+	//	log.Panic("c.providers boom!")
+	//}
 
 	var hp protocol.HttpPacks
 
@@ -143,7 +142,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer.LoadOrStore(id, ch)
 
 	//log.Println("[INFO]Using provider:", minDelayId, "  ", c.providers[minDelayId].info.IP)
-	c.providers[minDelayId].chanIn <- cpreq
+	c.providers["/provider/large"].chanIn <- cpreq
 
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
