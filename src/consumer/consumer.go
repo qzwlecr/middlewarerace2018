@@ -149,7 +149,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	//log.Println("Waiting for reading.")
 
-	go func() { io.WriteString(w, string(<-ch)) }()
+	io.WriteString(w, string(<-ch))
 	//log.Println("all things have been done.")
 }
 
