@@ -140,7 +140,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	ch := make(chan []byte)
 	c.answer.LoadOrStore(id, ch)
+
+	log.Println("[INFO]Using provider:", minDelayId, "  ", c.providers[minDelayId].info.IP)
 	c.providers[minDelayId].chanIn <- cpreq
+
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
 	//log.Println("Waiting for reading.")
