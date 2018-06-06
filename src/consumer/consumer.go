@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"encoding/binary"
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"io"
 	"log"
 	"math"
@@ -10,6 +9,8 @@ import (
 	"protocol"
 	"time"
 	"utility/timing"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
 const (
@@ -94,7 +95,7 @@ func (c Connection) read() {
 		//log.Println("Read Packages:", cbrep)
 		//log.Println("Writing answers to map:")
 		ch, _ := c.consumer.answer.Load(cprep.Identifier)
-		ch.(chan []byte) <- cprep.Reply
+		go func() { ch.(chan []byte) <- cprep.Reply }()
 		//log.Println("Writing answers to map Done.")
 		c.provider.delay = (c.provider.delay + cprep.Delay) / 2
 		timing.Since(ti, "[INFO]Reading: ")
@@ -148,7 +149,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	//log.Println("Waiting for reading.")
 
-	io.WriteString(w, string(<-ch))
+	go func() { io.WriteString(w, string(<-ch)) }()
 	//log.Println("all things have been done.")
 }
 
