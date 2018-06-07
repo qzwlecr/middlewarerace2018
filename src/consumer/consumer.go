@@ -8,9 +8,10 @@ import (
 	"time"
 	"utility/timing"
 
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"math"
 	"sync"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
 const (
@@ -99,7 +100,7 @@ func (c *Consumer) listen() {
 }
 
 func (c *Consumer) chooseProvider() string {
-
+	// test trigger rebuilt.
 	minDelay := uint64(math.MaxUint32)
 	minDelayId := ""
 	minActive := uint32(math.MaxUint32)
