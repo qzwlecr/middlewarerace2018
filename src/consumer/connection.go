@@ -46,7 +46,7 @@ func (connection Connection) write() {
 
 			connection.conn.Write(fullp)
 			timing.Since(ti, "[INFO]Writing: ")
-		case <-time.Tick(dialTimeout):
+		case <-time.Tick(checkTimeout):
 			if connection.isActive == true {
 				connection.isActive = false
 				atomic.AddUint32(&connection.provider.active, ^uint32(0))
