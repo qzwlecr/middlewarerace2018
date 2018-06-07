@@ -16,11 +16,11 @@ elif [[ "$1" == "provider-small" ]]; then
 
 elif [[ "$1" == "provider-medium" ]]; then
   echo "Starting medium provider agent..."
-  /root/dists/agent -w=4 -t=provider -n=medium
+  /root/dists/agent -w=3 -t=provider -n=medium
 
 elif [[ "$1" == "provider-large" ]]; then
   echo "Starting large provider agent..."
-  /root/dists/agent -w=5 -t=provider -n=large
+  /root/dists/agent -w=4 -t=provider -n=large
 
 else
   echo "Unrecognized arguments, exit."

@@ -82,7 +82,10 @@ func (connection Connection) read() {
 		}
 		ch, _ := connection.consumer.answer.Load(cprep.Identifier)
 		go func() { ch.(chan []byte) <- cprep.Reply }()
-		connection.provider.delay = (connection.provider.delay + cprep.Delay) / 2
+		connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
+		//if logger {
+			log.Println("Get reply: Lantency = ", cprep.Delay)
+		//}
 		timing.Since(ti, "[INFO]Reading: ")
 	}
 }

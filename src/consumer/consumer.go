@@ -103,13 +103,11 @@ func (c *Consumer) chooseProvider() string {
 	// test trigger rebuilt.
 	minDelay := uint64(math.MaxUint32)
 	minDelayId := ""
-	minActive := uint32(math.MaxUint32)
 	for id, p := range c.providers {
 		log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		if p.delay < minDelay && p.active/p.weight < minActive {
+		if p.delay < minDelay  {
 			minDelayId = id
 			minDelay = p.delay
-			minActive = p.active / p.weight
 		}
 	}
 	if minDelayId == "" {
