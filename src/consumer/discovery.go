@@ -20,10 +20,15 @@ type Provider struct {
 	info     ProviderInfo
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
-	chanIn   chan protocol.CustRequest
+	chanIn   chan Mission
 	conns    []Connection
 	active   uint32
 	weight   uint32
+}
+
+type Mission struct {
+	cr         protocol.CustRequest
+	chanAnswer chan []byte
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -35,24 +40,23 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		delay:  0,
 		weight: info.Weight,
 		active: 0,
-		chanIn: make(chan protocol.CustRequest, queueSize),
+		chanIn: make(chan Mission, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p
 		ec.isActive = false
-		newc, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
-		ec.conn = newc
+		conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
 
 		if err != nil {
 			log.Fatal(err)
 		}
-		if ec.conn == nil {
+		if conn == nil {
 			log.Panic("Conn boom in provider!")
 		}
-		go ec.read()
-		go ec.write()
+		go ec.read(conn)
+		go ec.write(conn)
 	}
 	c.providers[p.name] = p
 }

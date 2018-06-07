@@ -1,36 +1,49 @@
 package consumer
 
 import (
-	"time"
 	"encoding/binary"
 	"io"
 	"log"
-	"protocol"
-	"utility/timing"
 	"net"
+	"protocol"
+	"sync"
 	"sync/atomic"
+	"time"
+	"utility/timing"
 )
 
 type Connection struct {
-	conn     net.Conn
 	isActive bool
+	answer   sync.Map
 	consumer *Consumer
 	provider *Provider
 }
 
-func (connection Connection) write() {
+func (connection *Connection) write(conn net.Conn) {
 	lb := make([]byte, 4)
+	if conn == nil {
+		log.Panic("Conn boom in writer!")
+	}
 	lens := uint32(0)
 	var ti time.Time
 	for {
 		select {
-		case cpreq := <-connection.provider.chanIn:
+		case ms := <-connection.provider.chanIn:
 			if connection.isActive == false {
 				connection.isActive = true
 				atomic.AddUint32(&connection.provider.active, 1)
 			}
 			ti = time.Now()
-			cbreq, err := cpreq.ToByteArr()
+			connection.answer.Store(ms.cr.Identifier, ms.chanAnswer)
+
+			if logger {
+				log.Println("ID has been stored:", ms.cr.Identifier)
+				if ms.chanAnswer == nil {
+					log.Println("Pass para boom!")
+				}
+			}
+
+			cbreq, err := ms.cr.ToByteArr()
 			if err != nil {
 				log.Fatal(err)
 				return
@@ -44,7 +57,7 @@ func (connection Connection) write() {
 				log.Println("Write Packages:", fullp)
 			}
 
-			connection.conn.Write(fullp)
+			conn.Write(fullp)
 			timing.Since(ti, "[INFO]Writing: ")
 		case <-time.Tick(checkTimeout):
 			if connection.isActive == true {
@@ -55,13 +68,13 @@ func (connection Connection) write() {
 	}
 }
 
-func (connection Connection) read() {
+func (connection *Connection) read(conn net.Conn) {
 	lb := make([]byte, 4)
-	if connection.conn == nil {
+	if conn == nil {
 		log.Panic("Conn boom in reader!")
 	}
 	for {
-		n, err := io.ReadFull(connection.conn, lb)
+		n, err := io.ReadFull(conn, lb)
 		if n != 4 || err != nil {
 			log.Fatal(err)
 			return
@@ -69,7 +82,7 @@ func (connection Connection) read() {
 		ti := time.Now()
 		lens := binary.BigEndian.Uint32(lb)
 		cbrep := make([]byte, lens)
-		n, err = io.ReadFull(connection.conn, cbrep)
+		n, err = io.ReadFull(conn, cbrep)
 
 		if n != int(lens) || err != nil {
 			log.Fatal(err)
@@ -77,15 +90,25 @@ func (connection Connection) read() {
 		}
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
+
 		if logger {
-			log.Println("Read Packages:", cbrep)
+			log.Println("Read Packages:", cprep)
 		}
-		ch, _ := connection.consumer.answer.Load(cprep.Identifier)
-		go func() { ch.(chan []byte) <- cprep.Reply }()
+
+		go func(cprep protocol.CustResponse) {
+			ch, ok := connection.answer.Load(cprep.Identifier)
+			if ok != true {
+				log.Panic( "Can't get the channel with ID:", cprep.Identifier)
+			}
+
+			ch.(chan []byte) <- cprep.Reply
+			connection.answer.Delete(cprep.Identifier)
+		}(cprep)
+
 		connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
-		//if logger {
+		if logger {
 			log.Println("Get reply: Lantency = ", cprep.Delay)
-		//}
+		}
 		timing.Since(ti, "[INFO]Reading: ")
 	}
 }
