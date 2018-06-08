@@ -25,8 +25,8 @@ type SimpleConverter struct {
 // HTTPToCustom : TODO test.
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error) {
 	defer timing.Since(time.Now(), "CNVT HTTPToCust")
-	req.Identifier = cnvt.id
 	cnvt.mu.Lock()
+	req.Identifier = cnvt.id
 	cnvt.id = cnvt.id + 1
 	cnvt.mu.Unlock()
 	interf := httpreq.Payload["interface"]
