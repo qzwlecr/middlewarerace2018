@@ -98,7 +98,8 @@ func (connection *Connection) read(conn net.Conn) {
 		go func(cprep protocol.CustResponse) {
 			ch, ok := connection.answer.Load(cprep.Identifier)
 			if ok != true {
-				log.Panic( "Can't get the channel with ID:", cprep.Identifier)
+				log.Fatalln("[WARN]Can't get the channel with ID:", cprep.Identifier)
+				return
 			}
 
 			ch.(chan []byte) <- cprep.Reply
