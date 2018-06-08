@@ -20,7 +20,7 @@ const (
 type Consumer struct {
 	path      string
 	etcdAddr  []string
-	cnvt      protocol.SimpleConverter
+	cnvt      *protocol.SimpleConverter
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }
@@ -43,6 +43,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	c := &Consumer{
 		path:      watchPath,
 		etcdAddr:  endpoints,
+		cnvt:      new(protocol.SimpleConverter),
 		providers: make(map[string]*Provider),
 		client:    cli,
 	}
@@ -102,7 +103,7 @@ func (c *Consumer) chooseProvider() string {
 	minDelay := uint64(math.MaxUint32)
 	minDelayId := ""
 	for id, p := range c.providers {
-		log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
+		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
 		if p.delay < minDelay {
 			minDelayId = id
 			minDelay = p.delay
@@ -110,6 +111,9 @@ func (c *Consumer) chooseProvider() string {
 	}
 	if minDelayId == "" {
 		log.Panic("c.providers boom!")
+	}
+	if logger {
+		log.Println("[INFO]And then choose:", minDelay, " ", minDelayId)
 	}
 	return minDelayId
 }

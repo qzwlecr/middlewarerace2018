@@ -37,7 +37,7 @@ func (connection *Connection) write(conn net.Conn) {
 			connection.answer.Store(ms.cr.Identifier, ms.chanAnswer)
 
 			if logger {
-				log.Println("ID has been stored:", ms.cr.Identifier)
+				log.Println("[INFO]ID has been stored:", ms.cr.Identifier)
 				if ms.chanAnswer == nil {
 					log.Println("Pass para boom!")
 				}
@@ -54,7 +54,7 @@ func (connection *Connection) write(conn net.Conn) {
 			fullp := append(lb, cbreq...)
 
 			if logger {
-				log.Println("Write Packages:", fullp)
+				log.Println("[INFO]Write Packages:", fullp)
 			}
 
 			conn.Write(fullp)
@@ -92,7 +92,7 @@ func (connection *Connection) read(conn net.Conn) {
 		cprep.FromByteArr(cbrep)
 
 		if logger {
-			log.Println("Read Packages:", cprep)
+			log.Println("[INFO]Read Packages:", cprep)
 		}
 
 		go func(cprep protocol.CustResponse) {
@@ -102,12 +102,12 @@ func (connection *Connection) read(conn net.Conn) {
 			}
 
 			ch.(chan []byte) <- cprep.Reply
-			connection.answer.Delete(cprep.Identifier)
+			//connection.answer.Delete(cprep.Identifier)
 		}(cprep)
 
 		connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
 		if logger {
-			log.Println("Get reply: Lantency = ", cprep.Delay)
+			log.Println("[INFO]Get reply: Lantency = ", cprep.Delay)
 		}
 		timing.Since(ti, "[INFO]Reading: ")
 	}
