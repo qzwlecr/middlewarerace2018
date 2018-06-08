@@ -14,7 +14,7 @@ import (
 
 type Connection struct {
 	isActive bool
-	answer   sync.Map
+	answer   *sync.Map
 	consumer *Consumer
 	provider *Provider
 }

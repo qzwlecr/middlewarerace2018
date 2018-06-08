@@ -11,6 +11,7 @@ import (
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"sync"
 )
 
 type Provider struct {
@@ -47,6 +48,7 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		ec.consumer = c
 		ec.provider = p
 		ec.isActive = false
+		ec.answer = new(sync.Map)
 		conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
 
 		if err != nil {
