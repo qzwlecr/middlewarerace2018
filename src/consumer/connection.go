@@ -39,7 +39,7 @@ func (connection *Connection) write(conn net.Conn) {
 			fullp := append(lb, cbreq...)
 
 			if logger {
-				log.Println("Write Packages:", fullp)
+				//log.Println("Write Packages:", fullp)
 			}
 
 			conn.Write(fullp)
@@ -78,7 +78,7 @@ func (connection *Connection) read(conn net.Conn) {
 		var cprep protocol.CustResponse
 		cprep.FromByteArr(cbrep)
 		if logger {
-			log.Println("Read Packages:", cbrep)
+			//log.Println("Read Packages:", cbrep)
 		}
 		ch, _ := connection.consumer.answer.Load(cprep.Identifier)
 		go func(ch chan []byte, cprep protocol.CustResponse) {
