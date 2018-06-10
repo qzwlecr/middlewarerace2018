@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"protocol"
+	"sync/atomic"
 	"time"
 	"utility/timing"
 
@@ -100,6 +101,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	prov := c.providers[chosenId]
 	prov.idQueueMap.Store(cpreq.Identifier, prov.activeCnt)
+	atomic.AddUint32(&prov.activeCnt, uint32(1))
 }
 
 func (c *Consumer) listen() {

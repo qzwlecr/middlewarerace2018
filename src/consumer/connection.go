@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"protocol"
+	"sync/atomic"
 	"time"
 	"utility/timing"
 )
@@ -93,6 +94,7 @@ func (connection *Connection) read(conn net.Conn) {
 			connection.provider.delay = append(connection.provider.delay, cprep.Delay)
 		}
 		connection.provider.idQueueMap.Delete(cprep.Identifier)
+		atomic.AddUint32(&connection.provider.activeCnt, ^uint32(0))
 		if logger {
 			log.Println("Get reply: Lantency = ", cprep.Delay)
 		}

@@ -32,13 +32,13 @@ type Provider struct {
 func (c *Consumer) addProvider(key string, info ProviderInfo) {
 	defer timing.Since(time.Now(), "[INFO]Add Provider:")
 	p := &Provider{
-		name:   key,
-		info:   info,
-		delay:  make([]uint64, 1),
-		weight: info.Weight,
-		//active: 0,
-		chanIn: make(chan protocol.CustRequest, queueSize),
-		conns:  make([]Connection, connsSize),
+		name:      key,
+		info:      info,
+		delay:     make([]uint64, 1),
+		weight:    info.Weight,
+		activeCnt: 0,
+		chanIn:    make(chan protocol.CustRequest, queueSize),
+		conns:     make([]Connection, connsSize),
 	}
 	p.delay[0] = 0
 	for _, ec := range p.conns {
