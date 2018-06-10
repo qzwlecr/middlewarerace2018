@@ -16,7 +16,7 @@ import (
 type Provider struct {
 	name     string
 	etcdAddr []string
-	delay    uint64
+	delay    int64
 	info     ProviderInfo
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
@@ -31,7 +31,10 @@ func (p *Provider) calcDelay() {
 	for {
 		select {
 		case t := <-p.chanTime:
-			p.delay = uint64(time.Since(t).Nanoseconds())
+			p.delay = time.Since(t).Nanoseconds()
+			log.Println(p.info, p.delay)
+		case <-time.Tick(decreaseTimeout):
+			p.delay -= decreaseTime
 		}
 	}
 
