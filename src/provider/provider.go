@@ -197,33 +197,34 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 		}
 
 		// the mini-pressurer stuff
-		tmagic := binary.BigEndian.Uint64(cbreq[:8])
+		tmagic := binary.BigEndian.Uint64(cbreq[8:16])
 		if tmagic == protocol.CUST_MAGIC {
 			// this is the mini-pressurer little thing!
-			<-time.After(50 * time.Millisecond)
-			// DIRECT RETURN
-			bl := make([]byte, 4)
-			direp := protocol.CustResponse{
-				Identifier: protocol.CUST_MAGIC,
-				Delay:      protocol.CUST_MAGIC,
-				Reply:      make([]byte, 1),
-			}
-			cbrep, _ := direp.ToByteArr()
-			binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
+			go func(cbreq []byte) {
+				<-time.After(50 * time.Millisecond)
+				// DIRECT RETURN
+				bl := make([]byte, 4)
+				direp := protocol.CustResponse{
+					Identifier: binary.BigEndian.Uint64(cbreq[:8]),
+					Delay:      protocol.CUST_MAGIC,
+					Reply:      make([]byte, 1),
+				}
+				cbrep, _ := direp.ToByteArr()
+				binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
-			_, err := cConn.Write(bl)
-			if err != nil {
-				log.Println(err)
-				return
-			}
+				_, err := cConn.Write(bl)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 
-			//log.Println("to customer", cbrep)
-			_, err = cConn.Write(cbrep)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
+				//log.Println("to customer", cbrep)
+				_, err = cConn.Write(cbrep)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+			}(cbreq)
 			continue
 		}
 
