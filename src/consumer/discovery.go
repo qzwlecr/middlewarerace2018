@@ -32,9 +32,9 @@ func (p *Provider) calcDelay() {
 		select {
 		case t := <-p.chanTime:
 			p.delay = time.Since(t).Nanoseconds()
-			log.Println(p.info, p.delay)
-		case <-time.Tick(decreaseTimeout):
-			p.delay -= decreaseTime
+			//log.Println(p.info, p.delay)
+			//case <-time.Tick(decreaseTimeout):
+			//	p.delay -= decreaseTime
 		}
 	}
 
