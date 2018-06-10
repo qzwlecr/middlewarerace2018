@@ -6,24 +6,26 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"utility/timing"
+	"sync"
 	"time"
+	"utility/timing"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
 type Provider struct {
-	name     string
-	etcdAddr []string
-	delay    uint64
-	info     ProviderInfo
-	leaseId  etcdv3.LeaseID
-	client   *etcdv3.Client
-	chanIn   chan protocol.CustRequest
-	conns    []Connection
-	weight   uint32
-	//active   uint32
+	name       string
+	etcdAddr   []string
+	delay      []uint64
+	info       ProviderInfo
+	leaseId    etcdv3.LeaseID
+	client     *etcdv3.Client
+	chanIn     chan protocol.CustRequest
+	conns      []Connection
+	weight     uint32
+	activeCnt  uint32
+	idQueueMap sync.Map
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -32,12 +34,13 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 	p := &Provider{
 		name:   key,
 		info:   info,
-		delay:  0,
+		delay:  make([]uint64, 1),
 		weight: info.Weight,
 		//active: 0,
 		chanIn: make(chan protocol.CustRequest, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
+	p.delay[0] = 0
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p

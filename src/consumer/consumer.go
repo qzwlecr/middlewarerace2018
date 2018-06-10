@@ -17,6 +17,9 @@ import (
 const (
 	listenPort  = "20000"
 	requestPort = "30000"
+
+	activeDiv = 5
+	activeMul = 1.2
 )
 
 type Consumer struct {
@@ -94,6 +97,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
 	io.WriteString(w, string(<-ch))
+
+	prov := c.providers[chosenId]
+	prov.idQueueMap.Store(cpreq.Identifier, prov.activeCnt)
 }
 
 func (c *Consumer) listen() {
@@ -107,9 +113,17 @@ func (c *Consumer) chooseProvider() string {
 	minDelayId := ""
 	for id, p := range c.providers {
 		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		if p.delay < minDelay {
+		index := p.activeCnt / activeDiv
+		delay := uint64(0)
+		len := len(p.delay)
+		if index < uint32(len) {
+			delay = p.delay[index]
+		} else {
+			delay = uint64(float32(p.delay[len-1]) * activeMul)
+		}
+		if delay < minDelay {
 			minDelayId = id
-			minDelay = p.delay
+			minDelay = delay
 		}
 	}
 	if minDelayId == "" {
