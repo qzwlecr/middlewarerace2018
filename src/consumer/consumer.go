@@ -82,8 +82,10 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := cpreq.Identifier
 
-	ch := make(chan []byte)
-	c.answer.LoadOrStore(id, ch)
+	chanByte := make(chan []byte)
+	ti := time.Now()
+
+	c.answer.LoadOrStore(id, chanByte)
 	if logger {
 		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].info.IP)
 	}
@@ -93,7 +95,12 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
-	io.WriteString(w, string(<-ch))
+	ans := string(<-chanByte)
+	go func() {
+		c.providers[chosenId].chanTime <- ti
+	}()
+
+	io.WriteString(w, ans)
 }
 
 func (c *Consumer) listen() {

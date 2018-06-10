@@ -21,9 +21,20 @@ type Provider struct {
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
 	chanIn   chan protocol.CustRequest
+	chanTime chan time.Time
 	conns    []Connection
 	weight   uint32
 	//active   uint32
+}
+
+func (p *Provider) calcDelay() {
+	for {
+		select {
+		case t := <-p.chanTime:
+			p.delay = uint64(time.Since(t).Nanoseconds())
+		}
+	}
+
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -35,9 +46,11 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		delay:  0,
 		weight: info.Weight,
 		//active: 0,
-		chanIn: make(chan protocol.CustRequest, queueSize),
-		conns:  make([]Connection, connsSize),
+		chanIn:   make(chan protocol.CustRequest, queueSize),
+		chanTime: make(chan time.Time, queueSize),
+		conns:    make([]Connection, connsSize),
 	}
+	go p.calcDelay()
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p
