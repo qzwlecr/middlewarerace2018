@@ -87,7 +87,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	c.answer.LoadOrStore(id, chanByte)
 	if logger {
-		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].info.IP)
+		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].delay)
 	}
 	go func() {
 		c.providers[chosenId].chanIn <- cpreq
@@ -96,9 +96,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
 	ans := string(<-chanByte)
-	go func() {
-		c.providers[chosenId].chanTime <- ti
-	}()
+	go func(t time.Time) {
+		c.providers[chosenId].chanTime <- t
+	}(ti)
 
 	io.WriteString(w, ans)
 }
