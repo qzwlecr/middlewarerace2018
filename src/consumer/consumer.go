@@ -19,7 +19,7 @@ const (
 	listenPort  = "20000"
 	requestPort = "30000"
 
-	activeDiv = 5
+	activeDiv = 3
 	activeMul = 1.2
 )
 

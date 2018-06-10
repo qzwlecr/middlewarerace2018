@@ -89,7 +89,8 @@ func (connection *Connection) read(conn net.Conn) {
 		index := active.(int) / activeDiv
 		if index < len(connection.provider.delay) {
 			oldDelay := connection.provider.delay[index]
-			connection.provider.delay[index] = (oldWeight*oldDelay + newWeight*cprep.Delay) / 10
+			// connection.provider.delay[index] = (oldWeight*oldDelay + newWeight*cprep.Delay) / 10
+			connection.provider.delay[index] = (oldDelay + cprep.Delay) / 2
 		} else {
 			connection.provider.delay = append(connection.provider.delay, cprep.Delay)
 		}
