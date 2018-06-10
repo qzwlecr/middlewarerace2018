@@ -125,11 +125,11 @@ func (c *Consumer) chooseProvider() string {
 		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
 		index := p.activeCnt / activeDiv
 		delay := uint64(0)
-		len := len(p.delay)
-		if index < uint32(len) {
+		len := uint32(len(p.delay))
+		if index < len {
 			delay = p.delay[index]
 		} else {
-			delay = uint64(float32(p.delay[len-1]) * activeMul)
+			delay = uint64(float64(p.delay[len-1]) * math.Pow(activeMul, float64(p.activeCnt - len*activeDiv)))
 		}
 		if delay < minDelay {
 			minDelayId = id
