@@ -63,10 +63,12 @@ func (c *Consumer) start() {
 }
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
-	defer timing.Since(time.Now(), "[INFO]Client handling:")
+	//defer timing.Since(time.Now(), "[INFO]Client handling:")
 	if len(c.providers) == 0 {
 		return
 	}
+
+	tm := time.Now()
 
 	chosenId := c.chooseProvider()
 
@@ -93,7 +95,8 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		c.providers[chosenId].chanIn <- cpreq
 	}()
 
-	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
+	timing.Since(tm, "Procedure time: ")
+	//defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
 	ans := string(<-chanByte)
 	go func(t time.Time) {
