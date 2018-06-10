@@ -110,7 +110,7 @@ func (c *Consumer) listen() {
 
 func (c *Consumer) chooseProvider() string {
 	// test trigger rebuilt.
-	minDelay := uint64(math.MaxUint32)
+	minDelay := int64(math.MaxInt64)
 	minDelayId := ""
 	for id, p := range c.providers {
 		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)

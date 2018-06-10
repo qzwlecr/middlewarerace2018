@@ -12,7 +12,9 @@ const (
 	connsSize    = 256
 	oldWeight    = 0
 	newWeight    = 10 - oldWeight
-	baseTime = 50000
+	baseTime     = 50000
+	decreaseTimeout = 50 * time.Millisecond
+	decreaseTime = 1000 * 1000
 )
 
 type ProviderInfo struct {

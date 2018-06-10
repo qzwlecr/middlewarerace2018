@@ -85,9 +85,9 @@ func (connection *Connection) read(conn net.Conn) {
 			ch <- cprep.Reply
 		}(ch.(chan []byte), cprep)
 		//connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
-		if logger {
-			log.Println("Get reply: Lantency = ", cprep.Delay)
-		}
+		//if logger {
+		//	log.Println("Get reply: Lantency = ", cprep.Delay)
+		//}
 		timing.Since(ti, "[INFO]Reading: ")
 	}
 }
