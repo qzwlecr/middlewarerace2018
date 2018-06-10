@@ -42,17 +42,13 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		ec.consumer = c
 		ec.provider = p
 		ec.isActive = false
-		newc, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
-		ec.conn = newc
+		conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
 
 		if err != nil {
 			log.Fatal(err)
 		}
-		if ec.conn == nil {
-			log.Panic("Conn boom in provider!")
-		}
-		go ec.read()
-		go ec.write()
+		go ec.read(conn)
+		go ec.write(conn)
 	}
 	c.providers[p.name] = p
 }
