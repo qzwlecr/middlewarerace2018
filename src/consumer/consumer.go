@@ -87,7 +87,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	if logger {
 		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].info.IP)
 	}
-	c.providers[chosenId].chanIn <- cpreq
+	go func() {
+		c.providers[chosenId].chanIn <- cpreq
+	}()
 
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
@@ -104,8 +106,8 @@ func (c *Consumer) chooseProvider() string {
 	minDelay := uint64(math.MaxUint32)
 	minDelayId := ""
 	for id, p := range c.providers {
-		log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		if p.delay < minDelay  {
+		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
+		if p.delay < minDelay {
 			minDelayId = id
 			minDelay = p.delay
 		}

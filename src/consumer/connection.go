@@ -8,11 +8,10 @@ import (
 	"protocol"
 	"utility/timing"
 	"net"
-	"sync/atomic"
 )
 
 type Connection struct {
-	isActive bool
+	//isActive bool
 	consumer *Consumer
 	provider *Provider
 }
@@ -24,10 +23,10 @@ func (connection *Connection) write(conn net.Conn) {
 	for {
 		select {
 		case cpreq := <-connection.provider.chanIn:
-			if connection.isActive == false {
-				connection.isActive = true
-				atomic.AddUint32(&connection.provider.active, 1)
-			}
+			//if connection.isActive == false {
+			//	connection.isActive = true
+			//	atomic.AddUint32(&connection.provider.active, 1)
+			//}
 			ti = time.Now()
 			cbreq, err := cpreq.ToByteArr()
 			if err != nil {
@@ -45,11 +44,11 @@ func (connection *Connection) write(conn net.Conn) {
 
 			conn.Write(fullp)
 			timing.Since(ti, "[INFO]Writing: ")
-		case <-time.Tick(checkTimeout):
-			if connection.isActive == true {
-				connection.isActive = false
-				atomic.AddUint32(&connection.provider.active, ^uint32(0))
-			}
+			//case <-time.Tick(checkTimeout):
+			//if connection.isActive == true {
+			//	connection.isActive = false
+			//	atomic.AddUint32(&connection.provider.active, ^uint32(0))
+			//}
 		}
 	}
 }
@@ -82,11 +81,13 @@ func (connection *Connection) read(conn net.Conn) {
 			log.Println("Read Packages:", cbrep)
 		}
 		ch, _ := connection.consumer.answer.Load(cprep.Identifier)
-		go func() { ch.(chan []byte) <- cprep.Reply }()
-		connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
-		//if logger {
+		go func(ch chan []byte, cprep protocol.CustResponse) {
+			ch <- cprep.Reply
+		}(ch.(chan []byte), cprep)
+		//connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
+		if logger {
 			log.Println("Get reply: Lantency = ", cprep.Delay)
-		//}
+		}
 		timing.Since(ti, "[INFO]Reading: ")
 	}
 }

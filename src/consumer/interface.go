@@ -10,8 +10,9 @@ const (
 	checkTimeout = 2 * time.Second
 	queueSize    = 1024
 	connsSize    = 256
-	oldWeight    = 8
+	oldWeight    = 0
 	newWeight    = 10 - oldWeight
+	baseTime = 50000
 )
 
 type ProviderInfo struct {

@@ -22,8 +22,8 @@ type Provider struct {
 	client   *etcdv3.Client
 	chanIn   chan protocol.CustRequest
 	conns    []Connection
-	active   uint32
 	weight   uint32
+	//active   uint32
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -34,14 +34,14 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		info:   info,
 		delay:  0,
 		weight: info.Weight,
-		active: 0,
+		//active: 0,
 		chanIn: make(chan protocol.CustRequest, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p
-		ec.isActive = false
+		//ec.isActive = false
 		conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
 
 		if err != nil {
