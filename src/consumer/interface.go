@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	logger       = true
+	logger       = false
 	dialTimeout  = 5 * time.Second
 	checkTimeout = 2 * time.Second
 	queueSize    = 1024

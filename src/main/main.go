@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"log"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 )
 
 func GetLocalIP() string {
