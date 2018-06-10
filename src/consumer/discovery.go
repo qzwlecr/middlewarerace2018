@@ -11,7 +11,6 @@ import (
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"sync"
 )
 
 type Provider struct {
@@ -21,15 +20,10 @@ type Provider struct {
 	info     ProviderInfo
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
-	chanIn   chan Mission
+	chanIn   chan protocol.CustRequest
 	conns    []Connection
 	active   uint32
 	weight   uint32
-}
-
-type Mission struct {
-	cr         protocol.CustRequest
-	chanAnswer chan []byte
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -41,24 +35,24 @@ func (c *Consumer) addProvider(key string, info ProviderInfo) {
 		delay:  0,
 		weight: info.Weight,
 		active: 0,
-		chanIn: make(chan Mission, queueSize),
+		chanIn: make(chan protocol.CustRequest, queueSize),
 		conns:  make([]Connection, connsSize),
 	}
 	for _, ec := range p.conns {
 		ec.consumer = c
 		ec.provider = p
 		ec.isActive = false
-		ec.answer = new(sync.Map)
-		conn, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
+		newc, err := net.Dial("tcp", net.JoinHostPort(info.IP, requestPort))
+		ec.conn = newc
 
 		if err != nil {
 			log.Fatal(err)
 		}
-		if conn == nil {
+		if ec.conn == nil {
 			log.Panic("Conn boom in provider!")
 		}
-		go ec.read(conn)
-		go ec.write(conn)
+		go ec.read()
+		go ec.write()
 	}
 	c.providers[p.name] = p
 }

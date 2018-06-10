@@ -7,9 +7,9 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"utility/timing"
-	"sync/atomic"
 )
 
 const LOGGING = false
@@ -19,13 +19,16 @@ const FORCE_ASSERTION = false
 // SimpleConverter : the converter that do something great!
 type SimpleConverter struct {
 	id uint64
-	//mu sync.Mutex
+	mu sync.Mutex
 }
 
 // HTTPToCustom : TODO test.
 func (cnvt *SimpleConverter) HTTPToCustom(httpreq HttpPacks) (req CustRequest, err error) {
 	defer timing.Since(time.Now(), "CNVT HTTPToCust")
-	req.Identifier = atomic.AddUint64(&cnvt.id, 1)
+	cnvt.mu.Lock()
+	req.Identifier = cnvt.id
+	cnvt.id = cnvt.id + 1
+	cnvt.mu.Unlock()
 	interf := httpreq.Payload["interface"]
 	method := httpreq.Payload["method"]
 	pmtpstr := httpreq.Payload["parameterTypesString"]

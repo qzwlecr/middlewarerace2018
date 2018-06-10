@@ -9,6 +9,8 @@ import (
 	"utility/timing"
 
 	"math"
+	"sync"
+
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
 
@@ -20,7 +22,8 @@ const (
 type Consumer struct {
 	path      string
 	etcdAddr  []string
-	cnvt      *protocol.SimpleConverter
+	cnvt      protocol.SimpleConverter
+	answer    sync.Map
 	providers map[string]*Provider
 	client    *etcdv3.Client
 }
@@ -43,7 +46,6 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	c := &Consumer{
 		path:      watchPath,
 		etcdAddr:  endpoints,
-		cnvt:      new(protocol.SimpleConverter),
 		providers: make(map[string]*Provider),
 		client:    cli,
 	}
@@ -78,15 +80,14 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id := cpreq.Identifier
+
 	ch := make(chan []byte)
-	ms := Mission{
-		cr:         cpreq,
-		chanAnswer: ch,
-	}
+	c.answer.LoadOrStore(id, ch)
 	if logger {
 		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].info.IP)
 	}
-	c.providers[chosenId].chanIn <- ms
+	c.providers[chosenId].chanIn <- cpreq
 
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
@@ -103,17 +104,14 @@ func (c *Consumer) chooseProvider() string {
 	minDelay := uint64(math.MaxUint32)
 	minDelayId := ""
 	for id, p := range c.providers {
-		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		if p.delay < minDelay {
+		log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
+		if p.delay < minDelay  {
 			minDelayId = id
 			minDelay = p.delay
 		}
 	}
 	if minDelayId == "" {
 		log.Panic("c.providers boom!")
-	}
-	if logger {
-		log.Println("[INFO]And then choose:", minDelay, " ", minDelayId)
 	}
 	return minDelayId
 }

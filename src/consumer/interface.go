@@ -9,7 +9,7 @@ const (
 	dialTimeout  = 5 * time.Second
 	checkTimeout = 2 * time.Second
 	queueSize    = 1024
-	connsSize    = 512
+	connsSize    = 256
 	oldWeight    = 8
 	newWeight    = 10 - oldWeight
 )
