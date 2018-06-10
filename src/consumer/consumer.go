@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"protocol"
-	"sync/atomic"
 	"time"
 	"utility/timing"
 
@@ -18,9 +17,6 @@ import (
 const (
 	listenPort  = "20000"
 	requestPort = "30000"
-
-	activeDiv = 3
-	activeMul = 1.2
 )
 
 type Consumer struct {
@@ -99,11 +95,6 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer timing.Since(time.Now(), "[INFO]Request has been sent.")
 
-	io.WriteString(w, string(<-ch))
-
-	prov := c.providers[chosenId]
-	prov.idQueueMap.Store(cpreq.Identifier, prov.activeCnt)
-	atomic.AddUint32(&prov.activeCnt, uint32(1))
 	ans := string(<-chanByte)
 	go func() {
 		c.providers[chosenId].chanTime <- ti
@@ -123,17 +114,9 @@ func (c *Consumer) chooseProvider() string {
 	minDelayId := ""
 	for id, p := range c.providers {
 		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		index := p.activeCnt / activeDiv
-		delay := uint64(0)
-		len := uint32(len(p.delay))
-		if index < len {
-			delay = p.delay[index]
-		} else {
-			delay = uint64(float64(p.delay[len-1]) * math.Pow(activeMul, float64(p.activeCnt - len*activeDiv)))
-		}
-		if delay < minDelay {
+		if p.delay < minDelay {
 			minDelayId = id
-			minDelay = delay
+			minDelay = p.delay
 		}
 	}
 	if minDelayId == "" {

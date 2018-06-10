@@ -1,14 +1,13 @@
 package consumer
 
 import (
+	"time"
 	"encoding/binary"
 	"io"
 	"log"
-	"net"
 	"protocol"
-	"sync/atomic"
-	"time"
 	"utility/timing"
+	"net"
 )
 
 type Connection struct {
@@ -85,17 +84,7 @@ func (connection *Connection) read(conn net.Conn) {
 		go func(ch chan []byte, cprep protocol.CustResponse) {
 			ch <- cprep.Reply
 		}(ch.(chan []byte), cprep)
-		active, _ := connection.provider.idQueueMap.Load(cprep.Identifier)
-		index := active.(int) / activeDiv
-		if index < len(connection.provider.delay) {
-			oldDelay := connection.provider.delay[index]
-			// connection.provider.delay[index] = (oldWeight*oldDelay + newWeight*cprep.Delay) / 10
-			connection.provider.delay[index] = (oldDelay + cprep.Delay) / 2
-		} else {
-			connection.provider.delay = append(connection.provider.delay, cprep.Delay)
-		}
-		connection.provider.idQueueMap.Delete(cprep.Identifier)
-		atomic.AddUint32(&connection.provider.activeCnt, ^uint32(0))
+		//connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
 		if logger {
 			log.Println("Get reply: Lantency = ", cprep.Delay)
 		}
