@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"utility/timing"
 	"time"
+	"utility/timing"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -31,7 +31,7 @@ func (p *Provider) calcDelay() {
 	for {
 		select {
 		case t := <-p.chanTime:
-			p.delay = time.Since(t).Nanoseconds()
+			p.delay = (time.Since(t).Nanoseconds() + p.delay) / 2
 			//log.Println(p.info, p.delay)
 		case <-time.Tick(decreaseTimeout):
 			p.delay -= decreaseTime

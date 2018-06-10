@@ -14,7 +14,8 @@ const (
 	newWeight       = 10 - oldWeight
 	baseTime        = 50000
 	decreaseTimeout = 200 * time.Millisecond
-	decreaseTime    = 1000 * 1000
+	decreaseTime    = 1000 * 10
+	newbalancer     = 0.2
 )
 
 type ProviderInfo struct {
