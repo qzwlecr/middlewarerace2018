@@ -33,8 +33,8 @@ func (p *Provider) calcDelay() {
 		case t := <-p.chanTime:
 			p.delay = time.Since(t).Nanoseconds()
 			//log.Println(p.info, p.delay)
-			//case <-time.Tick(decreaseTimeout):
-			//	p.delay -= decreaseTime
+		case <-time.Tick(decreaseTimeout):
+			p.delay -= decreaseTime
 		}
 	}
 
