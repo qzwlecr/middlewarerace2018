@@ -1,93 +1,67 @@
 package consumer
 
 import (
-	"time"
-	"encoding/binary"
-	"io"
-	"log"
-	"protocol"
-	"utility/timing"
 	"net"
+	"log"
+	"io"
+	"encoding/binary"
+	"protocol"
 )
 
-type Connection struct {
-	//isActive bool
+type connection struct {
+	connId   int
 	consumer *Consumer
-	provider *Provider
+	provider *provider
 }
 
-func (connection *Connection) write(conn net.Conn) {
-	lb := make([]byte, 4)
-	lens := uint32(0)
-	var ti time.Time
-	for {
-		select {
-		case cpreq := <-connection.provider.chanIn:
-			//if connection.isActive == false {
-			//	connection.isActive = true
-			//	atomic.AddUint32(&connection.provider.active, 1)
-			//}
-			ti = time.Now()
-			cbreq, err := cpreq.ToByteArr()
-			if err != nil {
-				log.Fatal(err)
-				return
-			}
-
-			lens = uint32(len(cbreq))
-			binary.BigEndian.PutUint32(lb, lens)
-			fullp := append(lb, cbreq...)
-
-			if logger {
-				//log.Println("Write Packages:", fullp)
-			}
-
-			conn.Write(fullp)
-			timing.Since(ti, "[INFO]Writing: ")
-			//case <-time.Tick(checkTimeout):
-			//if connection.isActive == true {
-			//	connection.isActive = false
-			//	atomic.AddUint32(&connection.provider.active, ^uint32(0))
-			//}
-		}
-	}
-}
-
-func (connection *Connection) read(conn net.Conn) {
-	lb := make([]byte, 4)
+func (c *connection) readFromProvider(conn net.Conn) {
+	header := make([]byte, headerMaxSize)
+	//body := make([]byte, bodyMaxSize)
+	var lens uint32
+	var cprep protocol.CustResponse
 	if conn == nil {
-		log.Panic("Conn boom in reader!")
+		log.Panic("[PANIC]connection is nil when reading from provider!")
 	}
 	for {
-		n, err := io.ReadFull(conn, lb)
-		if n != 4 || err != nil {
-			log.Fatal(err)
+		_, err := io.ReadFull(conn, header)
+		if err != nil {
+			log.Fatalln(err)
 			return
 		}
 
-		ti := time.Now()
-
-		lens := binary.BigEndian.Uint32(lb)
-		cbrep := make([]byte, lens)
-		n, err = io.ReadFull(conn, cbrep)
-		if n != int(lens) || err != nil {
-			log.Fatal(err)
+		lens = binary.BigEndian.Uint32(header)
+		body := make([]byte, lens)
+		_, err = io.ReadFull(conn, body)
+		if err != nil {
+			log.Fatalln(err)
 			return
 		}
 
-		var cprep protocol.CustResponse
-		cprep.FromByteArr(cbrep)
-		if logger {
-			//log.Println("Read Packages:", cbrep)
+		cprep.FromByteArr(body)
+		ans := answer{
+			connId: c.connId,
+			id:     cprep.Identifier,
+			reply:  cprep.Reply,
 		}
-		ch, _ := connection.consumer.answer.Load(cprep.Identifier)
-		go func(ch chan []byte, cprep protocol.CustResponse) {
-			ch <- cprep.Reply
-		}(ch.(chan []byte), cprep)
-		//connection.provider.delay = (oldWeight*connection.provider.delay + newWeight*cprep.Delay) / 10
-		//if logger {
-		//	log.Println("Get reply: Lantency = ", cprep.Delay)
-		//}
-		timing.Since(ti, "[INFO]Reading: ")
+		c.consumer.chanIn <- ans
 	}
+}
+
+func (c *connection) writeToProvider(conn net.Conn) {
+	header := make([]byte, headerMaxSize)
+	var lens uint32
+	for cpreq := range c.consumer.chanOut {
+		cbreq, err := cpreq.ToByteArr()
+		if err != nil {
+			log.Fatalln(err)
+			return
+		}
+
+		lens = uint32(len(cbreq))
+		binary.BigEndian.PutUint32(header, lens)
+		fullp := append(header, cbreq...)
+
+		conn.Write(fullp)
+	}
+
 }

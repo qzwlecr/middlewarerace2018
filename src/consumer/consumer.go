@@ -1,34 +1,38 @@
 package consumer
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"protocol"
-	"time"
-	"utility/timing"
-
-	"math"
+	"context"
+	"github.com/coreos/etcd/mvcc/mvccpb"
+	"encoding/json"
 	"sync"
-
+	"io"
 	etcdv3 "github.com/coreos/etcd/clientv3"
-)
-
-const (
-	listenPort  = "20000"
-	requestPort = "30000"
+	"time"
 )
 
 type Consumer struct {
-	path      string
-	etcdAddr  []string
-	cnvt      protocol.SimpleConverter
-	answer    sync.Map
-	providers map[string]*Provider
-	client    *etcdv3.Client
+	watchPath   string
+	etcdAddr    []string
+	etcdClient  *etcdv3.Client
+	providers   map[string]*provider
+	converter   protocol.SimpleConverter
+	connections []*connection
+	answerMu    sync.RWMutex
+	answer      map[uint64]chan answer
+	chanOut     chan protocol.CustRequest
+	chanIn      chan answer
 }
 
-//NewConsumer receive etcd server address, and the services path on etcd.
+type answer struct {
+	connId int
+	id     uint64
+	reply  []byte
+}
+
+//NewConsumer receive etcd server address, and the services watchPath on etcd.
 //And return the consumer which has been started.
 func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	cfg := etcdv3.Config{
@@ -44,86 +48,147 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	}
 
 	c := &Consumer{
-		path:      watchPath,
-		etcdAddr:  endpoints,
-		providers: make(map[string]*Provider),
-		client:    cli,
+		watchPath:   watchPath,
+		etcdAddr:    endpoints,
+		etcdClient:  cli,
+		providers:   make(map[string]*provider),
+		converter:   protocol.SimpleConverter{},
+		connections: make([]*connection, 0),
+		chanOut:     make(chan protocol.CustRequest, queueSize),
+		chanIn:      make(chan answer, queueSize),
 	}
 
-	go c.start()
-	go c.listen()
+	go c.watchProvider()
+	go c.listenHTTP()
+	go c.updateAnswer()
 
 	return c
 }
 
-//Start shouldn't be called manually.
-func (c *Consumer) start() {
-	defer c.client.Close()
-	c.watchProvider()
-}
-
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
-	//defer timing.Since(time.Now(), "[INFO]Client handling:")
-	if len(c.providers) == 0 {
-		return
+	for len(c.providers) == 0 {
 	}
-
-	tm := time.Now()
-
-	chosenId := c.chooseProvider()
 
 	var hp protocol.HttpPacks
-
 	hp.FromRequests(r)
 
-	cpreq, err := c.cnvt.HTTPToCustom(hp)
+	cpreq, err := c.converter.HTTPToCustom(hp)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 		return
 	}
-
+	ch := make(chan answer)
 	id := cpreq.Identifier
 
-	chanByte := make(chan []byte)
-	ti := time.Now()
+	c.answerMu.Lock()
+	c.answer[id] = ch
+	c.answerMu.Unlock()
 
-	c.answer.LoadOrStore(id, chanByte)
-	if logger {
-		log.Println("[INFO]Using provider:", chosenId, "  ", c.providers[chosenId].delay)
+	t := time.Now()
+
+	select {
+	case c.chanOut <- cpreq:
+	default:
+		go c.overload()
+		go func() {
+			c.chanOut <- cpreq
+		}()
 	}
-	go func() {
-		c.providers[chosenId].chanIn <- cpreq
-	}()
 
-	timing.Since(tm, "Procedure time: ")
-	//defer timing.Since(time.Now(), "[INFO]Request has been sent.")
+	ret := <-ch
 
-	ans := string(<-chanByte)
-	go func(t time.Time) {
-		c.providers[chosenId].chanTime <- t
-	}(ti)
+	delay := time.Since(t)
+	provider := c.connections[ret.connId].provider
+	go func(duration time.Duration) {
+		provider.chanDelay <- delay
+	}(delay)
 
-	io.WriteString(w, ans)
+	io.WriteString(w, string(ret.reply))
 }
 
-func (c *Consumer) listen() {
+func (c *Consumer) listenHTTP() {
 	http.HandleFunc("/", c.clientHandler)
 	log.Fatal(http.ListenAndServe(":"+listenPort, nil))
 }
 
-func (c *Consumer) chooseProvider() string {
-	// test trigger rebuilt.
-	minDelay := int64(math.MaxInt64)
-	minDelayId := ""
-	for id, p := range c.providers {
-		//log.Println(p.info.IP, "Active: ", p.active, ", Delay: ", p.delay)
-		if p.delay < minDelay {
-			minDelayId = id
-			minDelay = p.delay
+//addProvider add (key,info) to the consumer's map.
+func (c *Consumer) addProvider(key string, info providerInfo) {
+	p := &provider{
+		name:            key,
+		info:            info,
+		baseDelay:       0,
+		baseDelaySample: 0,
+		weight:          info.Weight,
+		consumer:        c,
+		fullLevel:       0,
+		isFull:          false,
+		chanDelay:       make(chan time.Duration, queueSize),
+		//chanOut:     make(chan protocol.CustRequest, queueSize),
+		//chanIn:      make(chan protocol.CustResponse, queueSize),
+	}
+	c.providers[p.name] = p
+	//p.tryConnect()
+
+	go p.maintain()
+}
+
+func (c *Consumer) addConnection(p *provider) {
+	connection := &connection{
+		consumer: c,
+		provider: p,
+	}
+	c.connections = append(c.connections, connection)
+
+}
+
+//getProviderInfo return one etcdv3.event's info(Marshaled by Json).
+func (c *Consumer) getProviderInfo(kv mvccpb.KeyValue) providerInfo {
+	info := providerInfo{}
+	err := json.Unmarshal([]byte(kv.Value), &info)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return info
+}
+
+//watchProvider can auto update the consumer's provider-map.
+func (c *Consumer) watchProvider() {
+	rangeResp, err := c.etcdClient.Get(context.TODO(), c.watchPath, etcdv3.WithPrefix())
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	for _, kv := range rangeResp.Kvs {
+		info := c.getProviderInfo(*kv)
+		c.addProvider(string(kv.Key), info)
+	}
+	chanWatch := c.etcdClient.Watch(context.Background(), c.watchPath, etcdv3.WithPrefix())
+	for wresp := range chanWatch {
+		for _, ev := range wresp.Events {
+			switch ev.Type {
+			case etcdv3.EventTypePut:
+				info := c.getProviderInfo(*ev.Kv)
+				c.addProvider(string(ev.Kv.Key), info)
+			case etcdv3.EventTypeDelete:
+				delete(c.providers, string(ev.Kv.Key))
+			}
 		}
 	}
-	if minDelayId == "" {
-		log.Panic("c.providers boom!")
+}
+
+func (c *Consumer) updateAnswer() {
+	for ans := range c.chanIn {
+		c.answerMu.RLock()
+		c.answer[ans.id] <- ans
+		c.answerMu.RUnlock()
 	}
-	return minDelayId
+}
+
+func (c *Consumer) overload() {
+	for _, p := range c.providers {
+		if p.isFull == false {
+			c.addConnection(p)
+		}
+	}
+
 }
