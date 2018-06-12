@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"protocol"
+	"strconv"
 	"time"
 	"utility/rrselector"
 	"utility/timing"
@@ -48,18 +49,6 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 	}
 
 	// then, pre-create these connections..
-	for i := 0; i < targetConns; i = i + 1 {
-		pConn, err := net.Dial("tcp", providerAddr)
-		if err != nil {
-			panic("FUCK YOU MOTHER!")
-		}
-		pReqMsg := make(chan []byte, 100)
-		pRespMsg := make(chan []byte, 100)
-		go providerWrite(pConn, pReqMsg)
-		go providerRead(pConn, pRespMsg)
-		p.connIn[i] = pReqMsg
-		p.connOut[i] = pRespMsg
-	}
 
 	go p.Start()
 
@@ -128,6 +117,21 @@ func (p *Provider) handleReq(ln net.Listener, tcpCh <-chan int, converter *proto
 
 			// now we will try to pre-create some fixed amount
 			// of provider connections!
+			// -- the pre-create behavior seems not working well: provider starts too slow!
+			// let's try something else..
+			for p.createdConn < targetConns {
+				pConn, err := net.Dial("tcp", providerAddr)
+				if err != nil {
+					panic("Unable to connect to provider while creating No." + strconv.Itoa(p.createdConn) + " connections. Err is " + err.Error())
+				}
+				pReqMsg := make(chan []byte, 100)
+				pRespMsg := make(chan []byte, 100)
+				go providerWrite(pConn, pReqMsg)
+				go providerRead(pConn, pRespMsg)
+				p.connIn[p.createdConn] = pReqMsg
+				p.connOut[p.createdConn] = pRespMsg
+				p.createdConn++
+			}
 			/*pConn, err := net.Dial("tcp", providerAddr)
 			if err != nil {
 				log.Fatal(err)
