@@ -7,7 +7,7 @@ import (
 const (
 	logger              = false
 	dialTimeout         = 5 * time.Second
-	queueSize           = 1024
+	queueSize           = 128
 	headerMaxSize       = 4
 	delayTimes          = 1.25
 	fullMaxLevel        = 5

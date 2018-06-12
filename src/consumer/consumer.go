@@ -1,15 +1,16 @@
 package consumer
 
 import (
+	"context"
+	"encoding/json"
+	etcdv3 "github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"protocol"
-	"context"
-	"github.com/coreos/etcd/mvcc/mvccpb"
-	"encoding/json"
 	"sync"
-	"io"
-	etcdv3 "github.com/coreos/etcd/clientv3"
 	"time"
 )
 
@@ -56,6 +57,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		connections: make([]*connection, 0),
 		chanOut:     make(chan protocol.CustRequest, queueSize),
 		chanIn:      make(chan answer, queueSize),
+		answer:      make(map[uint64]chan answer),
 	}
 
 	go c.watchProvider()
@@ -127,6 +129,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers[p.name] = p
+	c.addConnection(p)
 	//p.tryConnect()
 
 	go p.maintain()
@@ -138,7 +141,9 @@ func (c *Consumer) addConnection(p *provider) {
 		provider: p,
 	}
 	c.connections = append(c.connections, connection)
-
+	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
+	go connection.readFromProvider(conn)
+	go connection.writeToProvider(conn)
 }
 
 //getProviderInfo return one etcdv3.event's info(Marshaled by Json).
