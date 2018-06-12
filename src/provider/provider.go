@@ -181,6 +181,7 @@ func (p *Provider) handleReq(ln net.Listener, tcpCh <-chan int, converter *proto
 }
 
 func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
+	log.Println("Connection Accepted from consumer..")
 	defer cConn.Close()
 	for {
 		tm := time.Now()
@@ -199,10 +200,12 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 			log.Println("failed to read content", err)
 			return
 		}
+		log.Println("Readed a new request from consumer..")
 
 		// the mini-pressurer stuff
 		tmagic := binary.BigEndian.Uint64(cbreq[8:16])
 		if tmagic == protocol.CUST_MAGIC {
+			log.Println("Mini-Pressurer Packs detected..")
 			// this is the mini-pressurer little thing!
 			go func(cbreq []byte) {
 				<-time.After(50 * time.Millisecond)
@@ -261,6 +264,7 @@ func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqM
 	for {
 		tm := time.Now()
 		msg := <-cReqMsg
+		log.Println("source req accepted.")
 		//log.Println("msg from cReqMsg", msg)
 		cpreq.FromByteArr(msg)
 		dpreq, err := converter.CustomToDubbo(cpreq)
@@ -284,7 +288,7 @@ func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 	for {
 		tm := time.Now()
 		dbReq := <-pReqMsg
-
+		log.Println("dubbo accepted.")
 		//log.Println("out", dbReq)
 		n, err := pConn.Write(dbReq)
 
@@ -314,6 +318,7 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 			log.Println(err)
 			return
 		}
+		log.Println("dubbo reply read..")
 		dbrep = append(dbh, dbrep...)
 
 		var id [8]byte
@@ -329,6 +334,7 @@ func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRes
 		//log.Println("From provider:")
 		//log.Println(dbrep)
 		// dprep.FromByteArr(<-pRespMsg)
+		log.Println("dubb2cust cnvt recevied..")
 		msg := <-pRespMsg
 		dprep.FromByteArr(msg)
 		cprep, err := converter.DubboToCustom(uint64(0), dprep)
@@ -356,6 +362,7 @@ func clientWrite(cConn net.Conn, cRespMsg <-chan []byte) {
 		tm := time.Now()
 		bl := make([]byte, 4)
 		cbrep := <-cRespMsg
+		log.Println("needwrite to consumer received..")
 		binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
 		_, err := cConn.Write(bl)
