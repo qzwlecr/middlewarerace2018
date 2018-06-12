@@ -1,6 +1,9 @@
 package consumer
 
-import "time"
+import (
+	"time"
+	"log"
+)
 
 //var testp protocol.CustRequest
 
@@ -27,8 +30,12 @@ func (p *provider) maintain() {
 			if p.baseDelaySample < baseDelaySampleSize {
 				p.baseDelay = (p.baseDelay + d.Nanoseconds()) / 2
 				p.baseDelaySample ++
+				if p.baseDelaySample == baseDelaySampleSize {
+					log.Println("Provider", p.info, " with base delay: ", p.baseDelay)
+				}
 			} else {
 				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
+					log.Println("Ready to full:",d.Nanoseconds())
 					p.fullLevel ++
 					if p.fullLevel > fullMaxLevel {
 						p.isFull = true

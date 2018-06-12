@@ -88,14 +88,11 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	t := time.Now()
 
-	select {
-	case c.chanOut <- cpreq:
-	default:
+	if len(c.chanOut) > overLoadSize {
 		go c.overload()
-		go func() {
-			c.chanOut <- cpreq
-		}()
 	}
+
+	c.chanOut <- cpreq
 
 	ret := <-ch
 
