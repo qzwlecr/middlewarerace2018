@@ -28,11 +28,9 @@ func (p *provider) maintain() {
 		select {
 		case d := <-p.chanDelay:
 			if p.baseDelaySample < baseDelaySampleSize {
+				log.Println("Provider", p.info, " with base delay: ", p.baseDelay)
 				p.baseDelay = (p.baseDelay + d.Nanoseconds()) / 2
 				p.baseDelaySample ++
-				if p.baseDelaySample == baseDelaySampleSize {
-					log.Println("Provider", p.info, " with base delay: ", p.baseDelay)
-				}
 			} else {
 				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
 					log.Println("Ready to full:",d.Nanoseconds())
@@ -42,7 +40,7 @@ func (p *provider) maintain() {
 						return
 					}
 				} else {
-					p.fullLevel = 0
+					p.fullLevel --
 				}
 			}
 		}

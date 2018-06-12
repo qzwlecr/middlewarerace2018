@@ -126,7 +126,9 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers[p.name] = p
-	c.addConnection(p)
+	for i := 0; i < connMinSize; i++ {
+		c.addConnection(p)
+	}
 	//p.tryConnect()
 
 	go p.maintain()

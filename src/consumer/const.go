@@ -10,9 +10,9 @@ const (
 	queueSize           = 128
 	overLoadSize		= 64
 	headerMaxSize       = 4
-	delayTimes          = 1.5
-	fullMaxLevel        = 5
-	baseDelaySampleSize = 10
+	delayTimes          = 1.25
+	fullMaxLevel        = 10
+	baseDelaySampleSize = 100
 	connMinSize         = 16
 	connMaxSize         = 1024
 	listenPort          = "20000"
