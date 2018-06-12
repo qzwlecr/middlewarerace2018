@@ -14,17 +14,20 @@ import (
 	"time"
 )
 
+var connId int
+
 type Consumer struct {
-	watchPath   string
-	etcdAddr    []string
-	etcdClient  *etcdv3.Client
-	providers   map[string]*provider
-	converter   protocol.SimpleConverter
-	connections []*connection
-	answerMu    sync.RWMutex
-	answer      map[uint64]chan answer
-	chanOut     chan protocol.CustRequest
-	chanIn      chan answer
+	watchPath     string
+	etcdAddr      []string
+	etcdClient    *etcdv3.Client
+	providers     map[string]*provider
+	converter     protocol.SimpleConverter
+	connections   []*connection
+	connectionsMu sync.Mutex
+	answerMu      sync.RWMutex
+	answer        map[uint64]chan answer
+	chanOut       chan protocol.CustRequest
+	chanIn        chan answer
 }
 
 type answer struct {
@@ -89,6 +92,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	t := time.Now()
 
 	if len(c.chanOut) > overLoadSize {
+		if logger {
+			log.Println("Overload!")
+		}
 		go c.overload()
 	}
 
@@ -139,7 +145,10 @@ func (c *Consumer) addConnection(p *provider) {
 		consumer: c,
 		provider: p,
 	}
+	c.connectionsMu.Lock()
+	connection.connId = len(c.connections)
 	c.connections = append(c.connections, connection)
+	c.connectionsMu.Unlock()
 	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
 	go connection.readFromProvider(conn)
 	go connection.writeToProvider(conn)
@@ -195,6 +204,7 @@ func (c *Consumer) overload() {
 			if logger {
 				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
 			}
+			return
 		}
 	}
 
