@@ -9,6 +9,7 @@ import (
 	"net"
 	"protocol"
 	"time"
+	"utility/rrselector"
 	"utility/timing"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -18,6 +19,7 @@ import (
 const (
 	lnAddr       = ":30000"
 	providerAddr = ":20880"
+	targetConns  = 3
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
@@ -41,6 +43,22 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 		info:     info,
 		chanStop: make(chan error),
 		client:   cli,
+		connIn:   make([]chan []byte, targetConns),
+		connOut:  make([]chan []byte, targetConns),
+	}
+
+	// then, pre-create these connections..
+	for i := 0; i < targetConns; i = i + 1 {
+		pConn, err := net.Dial("tcp", providerAddr)
+		if err != nil {
+			panic("FUCK YOU MOTHER!")
+		}
+		pReqMsg := make(chan []byte, 100)
+		pRespMsg := make(chan []byte, 100)
+		go providerWrite(pConn, pReqMsg)
+		go providerRead(pConn, pRespMsg)
+		p.connIn[i] = pReqMsg
+		p.connOut[i] = pRespMsg
 	}
 
 	go p.Start()
@@ -63,7 +81,7 @@ func (p *Provider) Start() {
 
 	var converter protocol.SimpleConverter
 	// handler for listening over tcp
-	go handleReq(ln, tcpCh, &converter)
+	go p.handleReq(ln, tcpCh, &converter)
 
 	go func(ch <-chan *etcdv3.LeaseKeepAliveResponse, tcpCh chan<- int) {
 		// close the tcp listener
@@ -94,9 +112,9 @@ type tMapEntry struct {
 	tBeg time.Time
 }
 
-func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
+func (p *Provider) handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
 	defer ln.Close()
-
+	var connSelector rrselector.RRSelector
 	go func(converter *protocol.SimpleConverter) {
 
 		for {
@@ -108,37 +126,46 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 			// cConn.Close()
 
-			pConn, err := net.Dial("tcp", providerAddr)
+			// now we will try to pre-create some fixed amount
+			// of provider connections!
+			/*pConn, err := net.Dial("tcp", providerAddr)
 			if err != nil {
 				log.Fatal(err)
 			}
 			// pConn.Close()
-
+			*/
+			rrvalue := connSelector.SelectBetween(targetConns)
 			// from client read
 			cReqMsg := make(chan []byte, 10)
-			pReqMsg := make(chan []byte, 10)
+			// instead of create new instances.. now we will try some brand new technologies!
+			// pReqMsg := make(chan []byte, 10)
+			// pRespMsg := make(chan []byte, 10)
+			pReqMsg := p.connIn[rrvalue]
+			pRespMsg := p.connOut[rrvalue]
 			cRespMsg := make(chan []byte, 10)
-			pRespMsg := make(chan []byte, 10)
-			elapsedCh := make(chan int64, 10)
 			go clientRead(cConn, cReqMsg)
 
-			addCh := make(chan tMapEntry, 5)
-			delCh := make(chan [8]byte, 5)
-			getReqCh := make(chan [8]byte, 1)
-			getRetCh := make(chan time.Time, 1)
-			go convertRequest(addCh, delCh, getReqCh, getRetCh)
+			// Timing part. Will not be used anymore!
+			/*
+				elapsedCh := make(chan int64, 10)
+				addCh := make(chan tMapEntry, 5)
+				delCh := make(chan [8]byte, 5)
+				getReqCh := make(chan [8]byte, 1)
+				getRetCh := make(chan time.Time, 1)
+				go convertRequest(addCh, delCh, getReqCh, getRetCh)
+			*/
 
 			// to provider converter
-			go tpConvert(converter, cReqMsg, pReqMsg, addCh)
+			go tpConvert(converter, cReqMsg, pReqMsg)
 
-			// to server write
-			go providerWrite(pConn, pReqMsg)
+			// to server write - Commented out, see ABOVE!
+			// go providerWrite(pConn, pReqMsg)
 
-			// from server read
-			go providerRead(pConn, pRespMsg, getReqCh, delCh, getRetCh, elapsedCh)
+			// from server read - Commented out, see ABOVE!
+			// go providerRead(pConn, pRespMsg)
 
 			// from provider converter
-			go tcConvert(converter, pRespMsg, cRespMsg, elapsedCh)
+			go tcConvert(converter, pRespMsg, cRespMsg)
 
 			// to client write
 			go clientWrite(cConn, cRespMsg)
@@ -169,11 +196,46 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte) {
 			return
 		}
 
+		// the mini-pressurer stuff
+		tmagic := binary.BigEndian.Uint64(cbreq[8:16])
+		if tmagic == protocol.CUST_MAGIC {
+			// this is the mini-pressurer little thing!
+			go func(cbreq []byte) {
+				<-time.After(50 * time.Millisecond)
+				// DIRECT RETURN
+				bl := make([]byte, 4)
+				direp := protocol.CustResponse{
+					Identifier: binary.BigEndian.Uint64(cbreq[:8]),
+					Delay:      protocol.CUST_MAGIC,
+					Reply:      make([]byte, 1),
+				}
+				cbrep, _ := direp.ToByteArr()
+				binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
+
+				_, err := cConn.Write(bl)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				//log.Println("to customer", cbrep)
+				_, err = cConn.Write(cbrep)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+			}(cbreq)
+			continue
+		}
+
 		//log.Println("msg to cReqMsg", cbreq)
 		cReqMsg <- cbreq
 		timing.Since(tm, "READ Provider//clientRead < EACH Req")
 	}
 }
+
+// Do you need more timing?
+/*
 func convertRequest(addCh <-chan tMapEntry, delCh, getReqCh <-chan [8]byte, getRetCh chan<- time.Time) {
 	tBegs := make(map[[8]byte]time.Time)
 	for {
@@ -188,17 +250,15 @@ func convertRequest(addCh <-chan tMapEntry, delCh, getReqCh <-chan [8]byte, getR
 		}
 		timing.Since(tm, "CNVT Provider//convertRequest < EACH Req")
 	}
-}
-func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqMsg chan<- []byte, addCh chan<- tMapEntry) {
+} */
+
+func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqMsg chan<- []byte) {
 	var cpreq protocol.CustRequest
 	for {
 		tm := time.Now()
 		msg := <-cReqMsg
 		//log.Println("msg from cReqMsg", msg)
 		cpreq.FromByteArr(msg)
-
-		timingBeg := time.Now()
-
 		dpreq, err := converter.CustomToDubbo(cpreq)
 		if err != nil {
 			log.Fatal(err)
@@ -212,12 +272,6 @@ func tpConvert(converter *protocol.SimpleConverter, cReqMsg <-chan []byte, pReqM
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		var entry tMapEntry
-		entry.tBeg = timingBeg
-		copy(entry.id[:], dbreq[4:12])
-		addCh <- entry
-
 		pReqMsg <- dbreq
 		timing.Since(tm, "CNVT Provider//convertRequest < EACH Req")
 	}
@@ -239,7 +293,7 @@ func providerWrite(pConn net.Conn, pReqMsg <-chan []byte) {
 		timing.Since(tm, "WRIT Provider//providerWrite < EACH Req")
 	}
 }
-func providerRead(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<- [8]byte, getRetCh <-chan time.Time, elapsedCh chan int64) {
+func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 	for {
 		tm := time.Now()
 		dbh := make([]byte, 16)
@@ -260,29 +314,20 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte, getReqCh, delCh chan<-
 
 		var id [8]byte
 		copy(id[:], dbh[4:12])
-		getReqCh <- id
-		timingBeg := <-getRetCh
-		delCh <- id
-
-		timingEnd := time.Now()
-		elapsed := timingEnd.Sub(timingBeg).Nanoseconds() / 1000
-
-		elapsedCh <- elapsed
 		pRespMsg <- dbrep
 		timing.Since(tm, "READ Provider//providerRead < EACH Req")
 	}
 }
-func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRespMsg chan<- []byte, elapsedCh <-chan int64) {
+func tcConvert(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cRespMsg chan<- []byte) {
 	var dprep protocol.DubboPacks
 	for {
 		tm := time.Now()
 		//log.Println("From provider:")
 		//log.Println(dbrep)
-		elapsed := <-elapsedCh
 		// dprep.FromByteArr(<-pRespMsg)
 		msg := <-pRespMsg
 		dprep.FromByteArr(msg)
-		cprep, err := converter.DubboToCustom(uint64(elapsed), dprep)
+		cprep, err := converter.DubboToCustom(uint64(0), dprep)
 		//log.Println("msg", msg, cprep)
 		if err != nil {
 			// log.Fatal(err)
