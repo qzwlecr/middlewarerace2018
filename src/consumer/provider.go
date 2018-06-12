@@ -27,15 +27,16 @@ func (p *provider) maintain() {
 			if p.baseDelaySample < baseDelaySampleSize {
 				p.baseDelay = (p.baseDelay + d.Nanoseconds()) / 2
 				p.baseDelaySample ++
-			}
-			if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
-				p.fullLevel ++
-				if p.fullLevel > fullMaxLevel {
-					p.isFull = true
-					return
-				}
 			} else {
-				p.fullLevel = 0
+				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
+					p.fullLevel ++
+					if p.fullLevel > fullMaxLevel {
+						p.isFull = true
+						return
+					}
+				} else {
+					p.fullLevel = 0
+				}
 			}
 		}
 	}

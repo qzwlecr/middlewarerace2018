@@ -193,6 +193,9 @@ func (c *Consumer) overload() {
 	for _, p := range c.providers {
 		if p.isFull == false {
 			c.addConnection(p)
+			if logger {
+				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
+			}
 		}
 	}
 
