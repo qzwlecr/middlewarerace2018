@@ -8,7 +8,7 @@ const (
 	logger              = true
 	dialTimeout         = 5 * time.Second
 	queueSize           = 512
-	overLoadSize        = 50
+	overLoadSize        = 10
 	headerMaxSize       = 4
 	delayTimes          = 1.25
 	fullMaxLevel        = 10
