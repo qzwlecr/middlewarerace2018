@@ -20,7 +20,7 @@ import (
 const (
 	lnAddr       = ":30000"
 	providerAddr = ":20880"
-	targetConns  = 3
+	targetConns  = 32
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
