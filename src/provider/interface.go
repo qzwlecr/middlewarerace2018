@@ -1,9 +1,8 @@
 package provider
 
 import (
-	"time"
-
 	etcdv3 "github.com/coreos/etcd/clientv3"
+	"time"
 )
 
 const (
@@ -18,8 +17,6 @@ type Provider struct {
 	chanStop chan error
 	leaseId  etcdv3.LeaseID
 	client   *etcdv3.Client
-	connIn   []chan []byte
-	connOut  []chan []byte
 }
 
 type ProviderInfo struct {
