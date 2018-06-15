@@ -3,7 +3,6 @@ package mempool
 import (
 	"container/list"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -42,7 +41,7 @@ func (mmp *ZhwkMemoryPool) Acquire() (uint32, []byte, error) {
 	if mmp.allocList.Len() == 0 {
 		// nothing left. ALLOC ONE!
 		mmp.buffers = append(mmp.buffers, BufferCond{make([]byte, mmp.clens), 1})
-		log.Println("MemoryPool SIZE changed. Now ", len(mmp.buffers))
+		//log.Println("MemoryPool SIZE changed. Now ", len(mmp.buffers))
 		// no need to enqueue
 		return uint32(len(mmp.buffers) - 1), mmp.buffers[len(mmp.buffers)-1].buf, nil
 	}
