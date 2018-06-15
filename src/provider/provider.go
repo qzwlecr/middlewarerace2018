@@ -62,7 +62,7 @@ func (p *Provider) Start() {
 		p.revoke()
 		log.Fatal(err)
 	}
-	http.ListenAndServe(lnPpofAddr, nil)
+	go log.Fatal(http.ListenAndServe(lnPpofAddr, nil))
 
 	tcpCh := make(chan int)
 
