@@ -103,10 +103,15 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	ret := <-ch
 
 	delay := time.Since(t)
-	provider := c.connections[ret.connId].provider
-	go func(duration time.Duration) {
-		provider.chanDelay <- delay
-	}(delay)
+	connection := c.connections[ret.connId]
+	provider := connection.provider
+	connection.ignoreNum ++
+	if connection.ignoreNum > ignoreSize {
+		go func(duration time.Duration) {
+			provider.chanDelay <- delay
+		}(delay)
+
+	}
 
 	io.WriteString(w, string(ret.reply))
 }

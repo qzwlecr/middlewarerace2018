@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const TIME_LOGGING = true
+const TIME_LOGGING = false
 const TOT_LOGGING = true
 
 // sample usage:

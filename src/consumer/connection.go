@@ -10,6 +10,7 @@ import (
 
 type connection struct {
 	connId   int
+	ignoreNum int
 	consumer *Consumer
 	provider *provider
 }

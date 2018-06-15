@@ -33,10 +33,11 @@ func (p *provider) maintain() {
 				p.baseDelaySample ++
 			} else {
 				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
-					log.Println("Ready to full:",d.Nanoseconds())
+					log.Println(p.info, "comes to full:", d.Nanoseconds())
 					p.fullLevel ++
 					if p.fullLevel > fullMaxLevel {
 						p.isFull = true
+						log.Println(p.info, "is full.")
 						return
 					}
 				} else {
