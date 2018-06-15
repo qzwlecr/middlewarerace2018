@@ -12,15 +12,14 @@ const (
 )
 
 type Provider struct {
-	name        string
-	etcdAddr    []string
-	info        ProviderInfo
-	chanStop    chan error
-	leaseId     etcdv3.LeaseID
-	client      *etcdv3.Client
-	createdConn int
-	connIn      []chan []byte
-	connOut     []chan []byte
+	name     string
+	etcdAddr []string
+	info     ProviderInfo
+	chanStop chan error
+	leaseId  etcdv3.LeaseID
+	client   *etcdv3.Client
+	connIn   []chan []byte
+	connOut  []chan []byte
 }
 
 type ProviderInfo struct {
