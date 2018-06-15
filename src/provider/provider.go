@@ -58,11 +58,11 @@ func (p *Provider) Start() {
 	ch := p.keepAlive()
 
 	ln, err := net.Listen("tcp", lnAddr)
-	http.ListenAndServe(":"+lnPpofAddr, nil)
 	if err != nil {
 		p.revoke()
 		log.Fatal(err)
 	}
+	http.ListenAndServe(lnPpofAddr, nil)
 
 	tcpCh := make(chan int)
 
