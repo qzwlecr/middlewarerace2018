@@ -3,8 +3,6 @@ package consumer
 import (
 	"context"
 	"encoding/json"
-	etcdv3 "github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"io"
 	"log"
 	"net"
@@ -12,6 +10,9 @@ import (
 	"protocol"
 	"sync"
 	"time"
+
+	etcdv3 "github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
 var connId int
@@ -66,8 +67,20 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	go c.watchProvider()
 	go c.listenHTTP()
 	go c.updateAnswer()
-
+	go c.OverloadCheck()
 	return c
+}
+
+func (c *Consumer) OverloadCheck() {
+	for {
+		<-time.After(25 * time.Millisecond)
+		if len(c.chanOut) > overLoadSize {
+			if logger {
+				log.Println("Overload!")
+			}
+			go c.overload()
+		}
+	}
 }
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,13 +104,6 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	t := time.Now()
 
-	if len(c.chanOut) > overLoadSize {
-		if logger {
-			log.Println("Overload!")
-		}
-		go c.overload()
-	}
-
 	c.chanOut <- cpreq
 
 	ret := <-ch
@@ -105,7 +111,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	delay := time.Since(t)
 	connection := c.connections[ret.connId]
 	provider := connection.provider
-	connection.ignoreNum ++
+	connection.ignoreNum++
 	if connection.ignoreNum > ignoreSize {
 		go func(duration time.Duration) {
 			provider.chanDelay <- delay
