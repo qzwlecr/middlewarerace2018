@@ -12,8 +12,6 @@ const timeGap = time.Duration(500) * time.Millisecond
 
 // Monitor is a descriptor for oop
 type Monitor struct {
-	lastRecv      uint64
-	lastTrans     uint64
 	lastTimePoint time.Time
 	speedMap      map[string][2]float64
 	statMap       map[string]psutilNet.IOCountersStat
@@ -54,7 +52,7 @@ func (desc *Monitor) StopMonitor() {
 	desc.stop <- 0
 }
 
-// GetSpeed get the network speed
+// GetSpeed gets the network speed
 func (desc *Monitor) GetSpeed(inter string) (float64, float64, error) {
 	spds, ok := desc.speedMap[inter]
 	if !ok {

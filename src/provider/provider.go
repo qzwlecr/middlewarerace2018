@@ -101,14 +101,14 @@ func (p *Provider) Start() {
 	// print network traffic
 	go func(monitor *network.Monitor) {
 		for {
-			recv, send, err := monitor.GetSpeed("eth0")
+			send, recv, err := monitor.GetSpeed("eth0")
 			if err != nil {
 				log.Println(err)
 			} else {
 				log.Println("eth0 recv speed", recv)
 				log.Println("eth0 send speed", send)
 			}
-			recv, send, err = monitor.GetSpeed("lo")
+			send, recv, err = monitor.GetSpeed("lo")
 			if err != nil {
 				log.Println(err)
 			} else {
