@@ -3,28 +3,36 @@ package consumer
 import (
 	"net"
 	"log"
-	"io"
 	"encoding/binary"
 	"protocol"
+	"io"
 )
 
 type connection struct {
-	connId   int
+	connId    int
 	ignoreNum int
-	consumer *Consumer
-	provider *provider
+	consumer  *Consumer
+	provider  *provider
 }
 
-func (c *connection) readFromProvider(conn net.Conn) {
+func (c *connection) dealWithConnection(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
-	//body := make([]byte, bodyMaxSize)
 	var lens uint32
 	var cprep protocol.CustResponse
-	if conn == nil {
-		log.Panic("[PANIC]connection is nil when reading from provider!")
-	}
-	for {
-		_, err := io.ReadFull(conn, header)
+	for cpreq := range c.consumer.chanOut {
+		cbreq, err := cpreq.ToByteArr()
+		if err != nil {
+			log.Fatalln(err)
+			return
+		}
+
+		lens = uint32(len(cbreq))
+		binary.BigEndian.PutUint32(header, lens)
+		fullp := append(header, cbreq...)
+
+		conn.Write(fullp)
+
+		_, err = io.ReadFull(conn, header)
 		if err != nil {
 			log.Fatalln(err)
 			return
@@ -46,23 +54,4 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 		c.consumer.chanIn <- ans
 	}
-}
-
-func (c *connection) writeToProvider(conn net.Conn) {
-	header := make([]byte, headerMaxSize)
-	var lens uint32
-	for cpreq := range c.consumer.chanOut {
-		cbreq, err := cpreq.ToByteArr()
-		if err != nil {
-			log.Fatalln(err)
-			return
-		}
-
-		lens = uint32(len(cbreq))
-		binary.BigEndian.PutUint32(header, lens)
-		fullp := append(header, cbreq...)
-
-		conn.Write(fullp)
-	}
-
 }

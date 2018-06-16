@@ -145,7 +145,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 	}
 	c.providers[p.name] = p
 	if p.name == "/provider/small" {
-		for i := 0; i < 64; i++ {
+		for i := 0; i < 128; i++ {
 			c.addConnection(p)
 		}
 	} else {
@@ -175,8 +175,7 @@ func (c *Consumer) addConnection(p *provider) {
 	c.connections = append(c.connections, connection)
 	c.connectionsMu.Unlock()
 	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
-	go connection.readFromProvider(conn)
-	go connection.writeToProvider(conn)
+	go connection.dealWithConnection(conn)
 }
 
 //getProviderInfo return one etcdv3.event's info(Marshaled by Json).
