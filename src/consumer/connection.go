@@ -23,19 +23,23 @@ func (c *connection) dealWithConnection(conn net.Conn) {
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)
-			return
+			continue
 		}
 
 		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
 
-		conn.Write(fullp)
+		_, err = conn.Write(fullp)
+		if err != nil {
+			log.Fatalln(err)
+			continue
+		}
 
 		_, err = io.ReadFull(conn, header)
 		if err != nil {
 			log.Fatalln(err)
-			return
+			continue
 		}
 
 		lens = binary.BigEndian.Uint32(header)
@@ -43,7 +47,7 @@ func (c *connection) dealWithConnection(conn net.Conn) {
 		_, err = io.ReadFull(conn, body)
 		if err != nil {
 			log.Fatalln(err)
-			return
+			continue
 		}
 
 		cprep.FromByteArr(body)

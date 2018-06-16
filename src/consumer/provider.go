@@ -12,6 +12,7 @@ type provider struct {
 	info            providerInfo
 	weight          uint32
 	consumer        *Consumer
+	connectionSize  int
 	isFull          bool
 	fullLevel       int
 	baseDelay       int64

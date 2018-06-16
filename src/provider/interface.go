@@ -19,7 +19,6 @@ type Provider struct {
 	chanStop    chan error
 	leaseId     etcdv3.LeaseID
 	client      *etcdv3.Client
-	createdConn int
 	connIn      []chan []byte
 	connOut     []chan []byte
 }
