@@ -144,13 +144,20 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers[p.name] = p
-	if p.name != "/provider/small" {
-		for i := 0; i < 256; i++ {
+	if p.name == "/provider/small" {
+		for i := 0; i < 16; i++ {
 			c.addConnection(p)
 		}
 	} else {
-		for i := 0; i < 16; i++ {
-			c.addConnection(p)
+		if p.name == "/provider/medium" {
+			for i := 0; i < 16; i++ {
+				c.addConnection(p)
+			}
+		} else {
+			for i := 0; i < 256; i++ {
+				c.addConnection(p)
+			}
+
 		}
 	}
 	//p.tryConnect()
