@@ -145,16 +145,16 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 	}
 	c.providers[p.name] = p
 	if p.name == "/provider/small" {
-		for i := 0; i < 16; i++ {
+		for i := 0; i < 32; i++ {
 			c.addConnection(p)
 		}
 	} else {
 		if p.name == "/provider/medium" {
-			for i := 0; i < 16; i++ {
+			for i := 0; i < 32; i++ {
 				c.addConnection(p)
 			}
 		} else {
-			for i := 0; i < 256; i++ {
+			for i := 0; i < 512; i++ {
 				c.addConnection(p)
 			}
 
