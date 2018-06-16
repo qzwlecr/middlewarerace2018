@@ -150,7 +150,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		}
 	} else {
 		if p.name == "/provider/medium" {
-			for i := 0; i < 128; i++ {
+			for i := 0; i < 192; i++ {
 				c.addConnection(p)
 			}
 		} else {
