@@ -67,21 +67,21 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	go c.watchProvider()
 	go c.listenHTTP()
 	go c.updateAnswer()
-	go c.OverloadCheck()
+	//go c.OverloadCheck()
 	return c
 }
 
-func (c *Consumer) OverloadCheck() {
-	for {
-		<-time.After(25 * time.Millisecond)
-		if len(c.chanOut) > overLoadSize {
-			if logger {
-				log.Println("Overload!")
-			}
-			go c.overload()
-		}
-	}
-}
+//func (c *Consumer) OverloadCheck() {
+//	for {
+//		<-time.After(25 * time.Millisecond)
+//		if len(c.chanOut) > overLoadSize {
+//			if logger {
+//				log.Println("Overload!")
+//			}
+//			go c.overload()
+//		}
+//	}
+//}
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	for len(c.providers) == 0 {
@@ -110,14 +110,15 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	delay := time.Since(t)
 	connection := c.connections[ret.connId]
-	provider := connection.provider
-	connection.ignoreNum++
-	if connection.ignoreNum > ignoreSize {
-		go func(duration time.Duration) {
-			provider.chanDelay <- delay
-		}(delay)
-
-	}
+	log.Println(connection.provider.info, "has Delay:", delay)
+	//provider := connection.provider
+	//connection.ignoreNum++
+	//if connection.ignoreNum > ignoreSize {
+	//	go func(duration time.Duration) {
+	//		provider.chanDelay <- delay
+	//	}(delay)
+	//
+	//}
 
 	io.WriteString(w, string(ret.reply))
 }
@@ -143,12 +144,18 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers[p.name] = p
-	for i := 0; i < connMinSize; i++ {
-		c.addConnection(p)
+	if p.name != "/provider/small" {
+		for i := 0; i < 256; i++ {
+			c.addConnection(p)
+		}
+	} else {
+		for i := 0; i < 16; i++ {
+			c.addConnection(p)
+		}
 	}
 	//p.tryConnect()
 
-	go p.maintain()
+	//go p.maintain()
 }
 
 func (c *Consumer) addConnection(p *provider) {
