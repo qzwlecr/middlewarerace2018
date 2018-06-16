@@ -10,6 +10,7 @@ import (
 	"protocol"
 	"strconv"
 	"time"
+	"utility/network"
 	"utility/rrselector"
 	"utility/timing"
 
@@ -93,6 +94,30 @@ func (p *Provider) Start() {
 			}
 		}
 	}(ch, tcpCh)
+
+	// monitor network traffic
+	monitor := network.NewMonitor()
+	monitor.StartMonitor()
+	// print network traffic
+	go func(monitor *network.Monitor) {
+		for {
+			recv, send, err := monitor.GetSpeed("eth0")
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Println("eth0 recv speed", recv)
+				log.Println("eth0 send speed", send)
+			}
+			recv, send, err = monitor.GetSpeed("lo")
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Println("lo recv speed", recv)
+				log.Println("lo send speed", send)
+			}
+			time.Sleep(time.Duration(2) * time.Second)
+		}
+	}(monitor)
 }
 
 // maintaing timing map
