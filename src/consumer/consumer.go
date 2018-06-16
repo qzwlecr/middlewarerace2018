@@ -154,7 +154,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 				c.addConnection(p)
 			}
 		} else {
-			for i := 0; i < 320; i++ {
+			for i := 0; i < 256; i++ {
 				c.addConnection(p)
 			}
 
