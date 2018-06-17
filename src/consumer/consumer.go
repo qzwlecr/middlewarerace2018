@@ -236,9 +236,9 @@ func (c *Consumer) forwardRequest() {
 	for len(c.providers) == 0 {
 
 	}
-	minId := ""
-	minDelay := int64(math.MaxInt32)
 	for req := range c.chanRequest {
+		minId := ""
+		minDelay := int64(math.MaxInt32)
 		for id, p := range c.providers {
 			if p.delay < minDelay && p.active < p.capacity {
 				minId = id
