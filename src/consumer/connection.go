@@ -1,27 +1,25 @@
 package consumer
 
 import (
-	"io"
-	"log"
 	"net"
+	"log"
+	"io"
 	"encoding/binary"
 	"protocol"
-	"time"
 )
 
 type connection struct {
-	connId int
-	//ignoreNum int
+	connId   int
+	ignoreNum int
 	consumer *Consumer
 	provider *provider
 }
 
 func (c *connection) readFromProvider(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
-	body := make([]byte, bodyMaxSize)
+	//body := make([]byte, bodyMaxSize)
 	var lens uint32
 	var cprep protocol.CustResponse
-	var ans answer
 	if conn == nil {
 		log.Panic("[PANIC]connection is nil when reading from provider!")
 	}
@@ -33,30 +31,27 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 
 		lens = binary.BigEndian.Uint32(header)
-		_, err = io.ReadFull(conn, body[:lens])
+		body := make([]byte, lens)
+		_, err = io.ReadFull(conn, body)
 		if err != nil {
 			log.Fatalln(err)
 			return
 		}
 
-		cprep.FromByteArr(body[:lens])
-
-		log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " got response from provider")
-		ans.connId = c.connId
-		ans.id = cprep.Identifier
-		ans.reply = cprep.Reply
-		go func(ans answer) {
-			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " write response to answer")
-			c.consumer.chanAnswer <- ans
-			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " write response to answer done")
-		}(ans)
+		cprep.FromByteArr(body)
+		ans := answer{
+			connId: c.connId,
+			id:     cprep.Identifier,
+			reply:  cprep.Reply,
+		}
+		c.consumer.chanIn <- ans
 	}
 }
 
 func (c *connection) writeToProvider(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
 	var lens uint32
-	for cpreq := range c.consumer.chanRequest {
+	for cpreq := range c.consumer.chanOut {
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)
@@ -66,11 +61,8 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
-		log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " write request to provider")
-		go func(fullp []byte) {
-			conn.Write(fullp)
-			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " write request to provider done")
-		}(fullp)
+
+		conn.Write(fullp)
 	}
 
 }

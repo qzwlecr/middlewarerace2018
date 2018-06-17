@@ -1,60 +1,52 @@
 package consumer
 
 import (
-	"protocol"
 	"time"
+	"log"
 )
 
 //var testp protocol.CustRequest
 
 type provider struct {
-	name        string
-	info        providerInfo
-	weight      uint32
-	consumer    *Consumer
-	chanRequest chan protocol.CustRequest
-	chanDelay   chan time.Duration
-	//activeMu    sync.Mutex
-	//delay       int64
-	//active      int
-	//capacity    int
+	name            string
+	info            providerInfo
+	weight          uint32
+	consumer        *Consumer
+	isFull          bool
+	fullLevel       int
+	baseDelay       int64
+	baseDelaySample int
+	chanDelay       chan time.Duration
+
+	//connections []connection
+	//chanOut     chan protocol.CustRequest
+	//chanIn      chan protocol.CustResponse
 }
 
-//func (p *provider) updateDelay() {
-//	for {
-//		select {
-//		case d := <-p.chanDelay:
-//			p.delay = (p.delay + d.Nanoseconds()) / 2
-//		case _ = <-time.After(500 * time.Millisecond):
-//			p.delay = 0
-//		}
-//	}
-//}
-
-//func (p *provider) maintain() {
-//	for {
-//		select {
-//		case d := <-p.chanDelay:
-//			if p.baseDelaySample < baseDelaySampleSize {
-//				log.Println("Provider", p.info, " with base delay: ", p.baseDelay)
-//				p.baseDelay = (p.baseDelay + d.Nanoseconds()) / 2
-//				p.baseDelaySample ++
-//			} else {
-//				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
-//					log.Println(p.info, "comes to full:", d.Nanoseconds())
-//					p.fullLevel ++
-//					if p.fullLevel > fullMaxLevel {
-//						p.isFull = true
-//						log.Println(p.info, "is full.")
-//						return
-//					}
-//				} else {
-//					p.fullLevel --
-//				}
-//			}
-//		}
-//	}
-//}
+func (p *provider) maintain() {
+	for {
+		select {
+		case d := <-p.chanDelay:
+			if p.baseDelaySample < baseDelaySampleSize {
+				log.Println("Provider", p.info, " with base delay: ", p.baseDelay)
+				p.baseDelay = (p.baseDelay + d.Nanoseconds()) / 2
+				p.baseDelaySample ++
+			} else {
+				if !p.isFull && d.Nanoseconds() > int64(float64(p.baseDelay)*float64(delayTimes)) {
+					log.Println(p.info, "comes to full:", d.Nanoseconds())
+					p.fullLevel ++
+					if p.fullLevel > fullMaxLevel {
+						p.isFull = true
+						log.Println(p.info, "is full.")
+						return
+					}
+				} else {
+					p.fullLevel --
+				}
+			}
+		}
+	}
+}
 
 //func (p *provider) tryConnect() {
 //	p.connections = make([]connection, 16)
@@ -71,7 +63,7 @@ type provider struct {
 //}
 //
 //func (p *provider) pressureTestEach() {
-//	p.chanRequest <- testp
+//	p.chanOut <- testp
 //}
 //
 //func (p *provider) pressureTest() {
