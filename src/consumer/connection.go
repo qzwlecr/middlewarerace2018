@@ -1,18 +1,18 @@
 package consumer
 
 import (
-	"net"
-	"log"
-	"io"
 	"encoding/binary"
+	"io"
+	"log"
+	"net"
 	"protocol"
 )
 
 type connection struct {
-	connId   int
+	connId    int
 	ignoreNum int
-	consumer *Consumer
-	provider *provider
+	consumer  *Consumer
+	provider  *provider
 }
 
 func (c *connection) readFromProvider(conn net.Conn) {
@@ -62,7 +62,7 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
 
-		conn.Write(fullp)
+		go conn.Write(fullp)
 	}
 
 }
