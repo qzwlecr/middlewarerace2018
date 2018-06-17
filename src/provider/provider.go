@@ -133,15 +133,10 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 		pRespMsg := make(chan []byte, 10)
 		reqChs := make([]chan []byte, 100)
 		for i := 0; i < connCnt; i++ {
-			reqChs[i] = make(chan []byte, 5)
+			msg := make(chan []byte, 5)
+			reqChs[i] = msg
+			go providerWrite(msg, pRespMsg)
 		}
-
-		// make connections
-		go func(reqChs []chan []byte) {
-			for i := 0; i < connCnt; i++ {
-				go providerWrite(reqChs[i], pRespMsg)
-			}
-		}(reqChs)
 
 		go dispatchMsg(cReqMsg, reqChs)
 
