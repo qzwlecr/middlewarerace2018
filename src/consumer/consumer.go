@@ -145,16 +145,16 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 	}
 	c.providers[p.name] = p
 	if p.name == "/provider/small" {
-		for i := 0; i < 128; i++ {
+		for i := 0; i < 1; i++ {
 			c.addConnection(p)
 		}
 	} else {
 		if p.name == "/provider/medium" {
-			for i := 0; i < 192; i++ {
+			for i := 0; i < 1; i++ {
 				c.addConnection(p)
 			}
 		} else {
-			for i := 0; i < 256; i++ {
+			for i := 0; i < 1; i++ {
 				c.addConnection(p)
 			}
 
@@ -222,15 +222,15 @@ func (c *Consumer) updateAnswer() {
 	}
 }
 
-func (c *Consumer) overload() {
-	for _, p := range c.providers {
-		if p.isFull == false {
-			c.addConnection(p)
-			if logger {
-				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
-			}
-			return
-		}
-	}
-
-}
+//func (c *Consumer) overload() {
+//	for _, p := range c.providers {
+//		if p.isFull == false {
+//			c.addConnection(p)
+//			if logger {
+//				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
+//			}
+//			return
+//		}
+//	}
+//
+//}
