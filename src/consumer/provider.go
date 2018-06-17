@@ -26,7 +26,7 @@ func (p *provider) updateDelay() {
 		select {
 		case d := <-p.chanDelay:
 			p.delay = (p.delay + d.Nanoseconds()) / 2
-		case _ = <-time.After(500 * time.Millisecond):
+		case _ = <-time.After(200 * time.Millisecond):
 			p.delay = 0
 		}
 	}

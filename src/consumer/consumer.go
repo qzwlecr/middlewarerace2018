@@ -66,6 +66,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	go c.listenHTTP()
 	go c.updateAnswer()
 	go c.forwardRequest()
+	go c.logActive()
 	//go c.OverloadCheck()
 	return c
 }
@@ -254,6 +255,21 @@ func (c *Consumer) forwardRequest() {
 		}
 		c.providers[minId].chanRequest <- req
 	}
+}
+
+func (c *Consumer) logActive() {
+	if logger == false {
+		return
+	}
+	for {
+		select {
+		case <-time.After(200 * time.Millisecond):
+			for _, p := range c.providers {
+				log.Println("[INFO]", p.info.IP, "has", p.delay, ", ", p.active)
+			}
+		}
+	}
+
 }
 
 //func (c *Consumer) overload() {
