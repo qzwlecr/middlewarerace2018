@@ -19,7 +19,10 @@ func (c *connection) dealWithConnection(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
 	var lens uint32
 	var cprep protocol.CustResponse
-	for cpreq := range c.consumer.chanOut {
+	for cpreq := range c.provider.chanRequest {
+		c.provider.activeMu.Lock()
+		c.provider.active ++
+		c.provider.activeMu.Unlock()
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)
@@ -56,6 +59,10 @@ func (c *connection) dealWithConnection(conn net.Conn) {
 			id:     cprep.Identifier,
 			reply:  cprep.Reply,
 		}
-		c.consumer.chanIn <- ans
+		c.consumer.chanAnswer <- ans
+
+		c.provider.activeMu.Lock()
+		c.provider.active --
+		c.provider.activeMu.Unlock()
 	}
 }

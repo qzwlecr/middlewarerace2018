@@ -9,13 +9,11 @@ import (
 	"net/http"
 	"protocol"
 	"sync"
-	"time"
-
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"time"
+	"math"
 )
-
-var connId int
 
 type Consumer struct {
 	watchPath     string
@@ -27,8 +25,8 @@ type Consumer struct {
 	connectionsMu sync.Mutex
 	answerMu      sync.RWMutex
 	answer        map[uint64]chan answer
-	chanOut       chan protocol.CustRequest
-	chanIn        chan answer
+	chanRequest   chan protocol.CustRequest
+	chanAnswer    chan answer
 }
 
 type answer struct {
@@ -59,32 +57,32 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		providers:   make(map[string]*provider),
 		converter:   protocol.SimpleConverter{},
 		connections: make([]*connection, 0),
-		chanOut:     make(chan protocol.CustRequest, queueSize),
-		chanIn:      make(chan answer, queueSize),
+		chanAnswer:  make(chan answer, queueSize),
 		answer:      make(map[uint64]chan answer),
 	}
 
 	go c.watchProvider()
 	go c.listenHTTP()
 	go c.updateAnswer()
-	go c.OverloadCheck()
+	go c.forwardRequest()
+	//go c.OverloadCheck()
 	return c
 }
 
-func (c *Consumer) OverloadCheck() {
-	for {
-		<-time.After(25 * time.Millisecond)
-		if len(c.chanOut) > overLoadSize {
-			if logger {
-				log.Println("Overload!")
-			}
-			go c.overload()
-		}
-		if len(c.connections) > connMaxSize {
-			return
-		}
-	}
-}
+//func (c *Consumer) OverloadCheck() {
+//	for {
+//		<-time.After(25 * time.Millisecond)
+//		if len(c.chanRequest) > overLoadSize {
+//			if logger {
+//				log.Println("Overload!")
+//			}
+//			//go c.overload()
+//		}
+//		if len(c.connections) > connMaxSize {
+//			return
+//		}
+//	}
+//}
 
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	for len(c.providers) == 0 {
@@ -105,7 +103,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = ch
 	c.answerMu.Unlock()
 
-	c.chanOut <- cpreq
+	c.chanRequest <- cpreq
 
 	t := time.Now()
 
@@ -117,7 +115,6 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	connection.ignoreNum++
 	if connection.ignoreNum > ignoreSize {
 		go func(duration time.Duration) {
-			log.Println(connection.provider.info, "has Delay:", delay)
 			provider.chanDelay <- delay
 		}(delay)
 	}
@@ -133,52 +130,62 @@ func (c *Consumer) listenHTTP() {
 //addProvider add (key,info) to the consumer's map.
 func (c *Consumer) addProvider(key string, info providerInfo) {
 	p := &provider{
-		name:            key,
-		info:            info,
-		baseDelay:       0,
-		baseDelaySample: 0,
-		weight:          info.Weight,
-		consumer:        c,
-		connectionSize:  0,
-		fullLevel:       0,
-		isFull:          false,
-		chanDelay:       make(chan time.Duration, queueSize),
+		name:        key,
+		info:        info,
+		weight:      info.Weight,
+		consumer:    c,
+		connections: make([]*connection, 0),
+		chanRequest: make(chan protocol.CustRequest, queueSize),
+		chanDelay:   make(chan time.Duration, queueSize),
+		active:      0,
+		delay:       0,
+
+		//baseDelay:       0,
+		//baseDelaySample: 0,
+		//fullLevel:       0,
+		//isFull:          false,
 	}
 	c.providers[p.name] = p
 
-	for i := 0; i < connMinSize; i++ {
-		c.addConnection(p)
-	}
-	//if p.name == "/provider/small" {
-	//	for i := 0; i < 96; i++ {
-	//		c.addConnection(p)
-	//	}
-	//} else {
-	//	if p.name == "/provider/medium" {
-	//		for i := 0; i < 192; i++ {
-	//			c.addConnection(p)
-	//		}
-	//	} else {
-	//		for i := 0; i < 224; i++ {
-	//			c.addConnection(p)
-	//		}
-	//
-	//	}
+	//for i := 0; i < connMinSize; i++ {
+	//	c.addConnection(p)
 	//}
+	if p.name == "/provider/small" {
+		for i := 0; i < 128; i++ {
+			c.addConnection(p)
+		}
+		p.capacity = 128
+	} else {
+		if p.name == "/provider/medium" {
+			for i := 0; i < 192; i++ {
+				c.addConnection(p)
+			}
+			p.capacity = 192
+		} else {
+			for i := 0; i < 256; i++ {
+				c.addConnection(p)
+			}
+			p.capacity = 256
+
+		}
+	}
 	//p.tryConnect()
 
-	go p.maintain()
+	//go p.maintain()
+	go p.updateDelay()
 }
 
 func (c *Consumer) addConnection(p *provider) {
 	connection := &connection{
-		consumer: c,
-		provider: p,
+		consumer:  c,
+		provider:  p,
+		ignoreNum: 0,
 	}
 	c.connectionsMu.Lock()
 	connection.connId = len(c.connections)
 	c.connections = append(c.connections, connection)
 	c.connectionsMu.Unlock()
+	p.connections = append(p.connections, connection)
 	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
 	go connection.dealWithConnection(conn)
 }
@@ -219,22 +226,46 @@ func (c *Consumer) watchProvider() {
 }
 
 func (c *Consumer) updateAnswer() {
-	for ans := range c.chanIn {
+	for ans := range c.chanAnswer {
 		c.answerMu.RLock()
 		c.answer[ans.id] <- ans
 		c.answerMu.RUnlock()
 	}
 }
 
-func (c *Consumer) overload() {
-	for _, p := range c.providers {
-		if p.isFull == false {
-			c.addConnection(p)
-			if logger {
-				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
-			}
-			return
-		}
-	}
+func (c *Consumer) forwardRequest() {
+	for len(c.providers) == 0 {
 
+	}
+	minId := ""
+	minDelay := int64(math.MaxInt32)
+	for req := range c.chanRequest {
+		for id, p := range c.providers {
+			if p.delay < minDelay && p.active < p.capacity {
+				minId = id
+				minDelay = p.delay
+			}
+		}
+		if minId == "" {
+			for id, _ := range c.providers {
+				minId = id
+				break
+			}
+			log.Println("[Warning]Overload!!!!!!!Give random request to ", minId)
+		}
+		c.providers[minId].chanRequest <- req
+	}
 }
+
+//func (c *Consumer) overload() {
+//	for _, p := range c.providers {
+//		if p.isFull == false {
+//			c.addConnection(p)
+//			if logger {
+//				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
+//			}
+//			return
+//		}
+//	}
+//
+//}

@@ -15,7 +15,7 @@ const (
 	baseDelaySampleSize = 100
 	connMinSize         = 16
 	connMaxSize         = 768
-	ignoreSize          = 50
+	ignoreSize          = 100
 	listenPort          = "20000"
 	requestPort         = "30000"
 	//simulateQPS   = 2000
