@@ -182,6 +182,8 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte, converter *protocol.Simpl
 			log.Println("failed to read length", err)
 			return
 		}
+		timeStamp := time.Now()
+		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": got request from customer")
 
 		lens := binary.BigEndian.Uint32(bl)
 
@@ -258,6 +260,7 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 	for {
 		tm := time.Now()
+		log.Println(tm.UnixNano()/int64(time.Millisecond), ": sending to provider")
 
 		//log.Println("msg from cReqMsg", msg)
 
