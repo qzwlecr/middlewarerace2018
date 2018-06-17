@@ -11,8 +11,6 @@ import (
 	"sync"
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"time"
-	"math"
 )
 
 type Consumer struct {
@@ -23,8 +21,8 @@ type Consumer struct {
 	converter     protocol.SimpleConverter
 	connections   []*connection
 	connectionsMu sync.Mutex
-	answerMu      sync.RWMutex
 	answer        map[uint64]chan answer
+	answerMu      sync.RWMutex
 	chanRequest   chan protocol.CustRequest
 	chanAnswer    chan answer
 }
@@ -66,28 +64,12 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	go c.listenHTTP()
 	go c.updateAnswer()
 	go c.forwardRequest()
-	go c.logActive()
-	//go c.OverloadCheck()
 	return c
 }
 
-//func (c *Consumer) OverloadCheck() {
-//	for {
-//		<-time.After(25 * time.Millisecond)
-//		if len(c.chanRequest) > overLoadSize {
-//			if logger {
-//				log.Println("Overload!")
-//			}
-//			//go c.overload()
-//		}
-//		if len(c.connections) > connMaxSize {
-//			return
-//		}
-//	}
-//}
-
 func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	for len(c.providers) == 0 {
+
 	}
 
 	var hp protocol.HttpPacks
@@ -107,19 +89,19 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	c.chanRequest <- cpreq
 
-	t := time.Now()
+	//t := time.Now()
 
 	ret := <-ch
 
-	delay := time.Since(t)
-	connection := c.connections[ret.connId]
-	provider := connection.provider
-	connection.ignoreNum++
-	if connection.ignoreNum > ignoreSize {
-		go func(duration time.Duration) {
-			provider.chanDelay <- delay
-		}(delay)
-	}
+	//delay := time.Since(t)
+	//connection := c.connections[ret.connId]
+	//provider := connection.provider
+	//connection.ignoreNum++
+	//if connection.ignoreNum > ignoreSize {
+	//	go func(duration time.Duration) {
+	//		provider.chanDelay <- delay
+	//	}(delay)
+	//}
 
 	io.WriteString(w, string(ret.reply))
 }
@@ -137,57 +119,29 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		weight:      info.Weight,
 		consumer:    c,
 		chanRequest: make(chan protocol.CustRequest, queueSize),
-		chanDelay:   make(chan time.Duration, queueSize),
-		active:      0,
-		delay:       0,
-
-		//baseDelay:       0,
-		//baseDelaySample: 0,
-		//fullLevel:       0,
-		//isFull:          false,
+		//chanDelay:   make(chan time.Duration, queueSize),
+		//delay:       0,
 	}
 	c.providers[p.name] = p
 
-	//for i := 0; i < connMinSize; i++ {
-	//	c.addConnection(p)
-	//}
-	if p.name == "/provider/small" {
-		for i := 0; i < 128; i++ {
-			c.addConnection(p)
-		}
-		p.capacity = 128
-	} else {
-		if p.name == "/provider/medium" {
-			for i := 0; i < 192; i++ {
-				c.addConnection(p)
-			}
-			p.capacity = 192
-		} else {
-			for i := 0; i < 256; i++ {
-				c.addConnection(p)
-			}
-			p.capacity = 256
+	c.addConnection(p)
 
-		}
-	}
-	//p.tryConnect()
-
-	//go p.maintain()
-	go p.updateDelay()
+	//go p.updateDelay()
 }
 
 func (c *Consumer) addConnection(p *provider) {
 	connection := &connection{
-		consumer:  c,
-		provider:  p,
-		ignoreNum: 0,
+		consumer: c,
+		provider: p,
+		//ignoreNum: 0,
 	}
 	c.connectionsMu.Lock()
 	connection.connId = len(c.connections)
 	c.connections = append(c.connections, connection)
 	c.connectionsMu.Unlock()
 	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
-	go connection.dealWithConnection(conn)
+	go connection.readFromProvider(conn)
+	go connection.writeToProvider(conn)
 }
 
 //getProviderInfo return one etcdv3.event's info(Marshaled by Json).
@@ -237,50 +191,13 @@ func (c *Consumer) forwardRequest() {
 	for len(c.providers) == 0 {
 
 	}
-	for req := range c.chanRequest {
-		minId := ""
-		minDelay := int64(math.MaxInt32)
-		for id, p := range c.providers {
-			if p.delay < minDelay && p.active < p.capacity {
-				minId = id
-				minDelay = p.delay
-			}
-		}
-		if minId == "" {
-			for id, _ := range c.providers {
-				minId = id
-				break
-			}
-			log.Println("[Warning]Overload!!!!!!!Give random request to ", minId)
-		}
-		c.providers[minId].chanRequest <- req
-	}
-}
-
-func (c *Consumer) logActive() {
-	if logger == false {
-		return
-	}
+	var req protocol.CustRequest
 	for {
-		select {
-		case <-time.After(200 * time.Millisecond):
-			for _, p := range c.providers {
-				log.Println("[INFO]", p.info.IP, "has", p.delay, ", ", p.active)
+		for _, p := range c.providers {
+			for i := 0; i < int(p.weight); i++ {
+				req = <-c.chanRequest
+				p.chanRequest <- req
 			}
 		}
 	}
-
 }
-
-//func (c *Consumer) overload() {
-//	for _, p := range c.providers {
-//		if p.isFull == false {
-//			c.addConnection(p)
-//			if logger {
-//				log.Println(p.info, "Now have new connection. Total:", len(c.connections))
-//			}
-//			return
-//		}
-//	}
-//
-//}

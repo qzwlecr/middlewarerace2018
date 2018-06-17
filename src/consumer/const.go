@@ -9,9 +9,10 @@ const (
 	dialTimeout   = 5 * time.Second
 	queueSize     = 512
 	headerMaxSize = 4
-	ignoreSize    = 100
+	bodyMaxSize   = 8192
 	listenPort    = "20000"
 	requestPort   = "30000"
+	//ignoreSize    = 100
 	//overLoadSize        = 5
 	//simulateQPS   = 2000
 	//bodyMaxSize   = 4096

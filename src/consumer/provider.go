@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"protocol"
-	"sync"
 	"time"
 )
 
@@ -13,24 +12,24 @@ type provider struct {
 	info        providerInfo
 	weight      uint32
 	consumer    *Consumer
-	activeMu    sync.Mutex
 	chanRequest chan protocol.CustRequest
 	chanDelay   chan time.Duration
-	delay       int64
-	active      int
-	capacity    int
+	//activeMu    sync.Mutex
+	//delay       int64
+	//active      int
+	//capacity    int
 }
 
-func (p *provider) updateDelay() {
-	for {
-		select {
-		case d := <-p.chanDelay:
-			p.delay = (p.delay + d.Nanoseconds()) / 2
-		case _ = <-time.After(500 * time.Millisecond):
-			p.delay = 0
-		}
-	}
-}
+//func (p *provider) updateDelay() {
+//	for {
+//		select {
+//		case d := <-p.chanDelay:
+//			p.delay = (p.delay + d.Nanoseconds()) / 2
+//		case _ = <-time.After(500 * time.Millisecond):
+//			p.delay = 0
+//		}
+//	}
+//}
 
 //func (p *provider) maintain() {
 //	for {

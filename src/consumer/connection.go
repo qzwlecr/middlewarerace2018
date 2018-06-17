@@ -1,68 +1,70 @@
 package consumer
 
 import (
-	"net"
+	"io"
 	"log"
+	"net"
 	"encoding/binary"
 	"protocol"
-	"io"
 )
 
 type connection struct {
-	connId    int
-	ignoreNum int
-	consumer  *Consumer
-	provider  *provider
+	connId int
+	//ignoreNum int
+	consumer *Consumer
+	provider *provider
 }
 
-func (c *connection) dealWithConnection(conn net.Conn) {
+func (c *connection) readFromProvider(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
+	body := make([]byte, bodyMaxSize)
 	var lens uint32
 	var cprep protocol.CustResponse
-	for cpreq := range c.provider.chanRequest {
-		c.provider.activeMu.Lock()
-		c.provider.active ++
-		c.provider.activeMu.Unlock()
+	var ans answer
+	if conn == nil {
+		log.Panic("[PANIC]connection is nil when reading from provider!")
+	}
+	for {
+		_, err := io.ReadFull(conn, header)
+		if err != nil {
+			log.Fatalln(err)
+			return
+		}
+
+		lens = binary.BigEndian.Uint32(header)
+		_, err = io.ReadFull(conn, body[:lens])
+		if err != nil {
+			log.Fatalln(err)
+			return
+		}
+
+		cprep.FromByteArr(body[:lens])
+
+		ans.connId = c.connId
+		ans.id = cprep.Identifier
+		ans.reply = cprep.Reply
+		go func(ans answer) {
+			c.consumer.chanAnswer <- ans
+		}(ans)
+	}
+}
+
+func (c *connection) writeToProvider(conn net.Conn) {
+	header := make([]byte, headerMaxSize)
+	var lens uint32
+	for cpreq := range c.consumer.chanRequest {
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)
-			continue
+			return
 		}
 
 		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
-
-		_, err = conn.Write(fullp)
-		if err != nil {
-			log.Fatalln(err)
-			continue
-		}
-
-		_, err = io.ReadFull(conn, header)
-		if err != nil {
-			log.Fatalln(err)
-			continue
-		}
-
-		lens = binary.BigEndian.Uint32(header)
-		body := make([]byte, lens)
-		_, err = io.ReadFull(conn, body)
-		if err != nil {
-			log.Fatalln(err)
-			continue
-		}
-
-		cprep.FromByteArr(body)
-		ans := answer{
-			connId: c.connId,
-			id:     cprep.Identifier,
-			reply:  cprep.Reply,
-		}
-		c.consumer.chanAnswer <- ans
-
-		c.provider.activeMu.Lock()
-		c.provider.active --
-		c.provider.activeMu.Unlock()
+		go func(fullp []byte) {
+			conn.Write(fullp)
+		}(fullp)
 	}
+
 }
