@@ -260,7 +260,7 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 	for {
 		tm := time.Now()
-		log.Println(tm.UnixNano()/int64(time.Millisecond), ": sending to provider")
+		log.Println(tm.UnixNano()/int64(time.Millisecond), ": ", msg[4:12], " sending to provider")
 
 		//log.Println("msg from cReqMsg", msg)
 
@@ -280,6 +280,8 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 		//log.Println("out", dbReq)
 		n, err := pConn.Write(msg)
+		timeStamp := time.Now()
+		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", msg[4:12], " done sending to provider")
 		// log.Println("current requests pending: ", len(cReqMsg))
 
 		if err != nil || n != len(msg) {
@@ -308,7 +310,7 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 			return
 		}
 		timeStamp := time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": got response from provider")
+		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ":", dbh[4:12], " got response from provider")
 		//log.Println("Dubbo Head:", dbh)
 		lens := binary.BigEndian.Uint32(dbh[12:16])
 		dbrep := make([]byte, lens)
