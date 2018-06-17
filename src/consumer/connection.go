@@ -6,6 +6,7 @@ import (
 	"net"
 	"encoding/binary"
 	"protocol"
+	"time"
 )
 
 type connection struct {
@@ -40,11 +41,14 @@ func (c *connection) readFromProvider(conn net.Conn) {
 
 		cprep.FromByteArr(body[:lens])
 
+		log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " got response from provider")
 		ans.connId = c.connId
 		ans.id = cprep.Identifier
 		ans.reply = cprep.Reply
 		go func(ans answer) {
+			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " write response to answer")
 			c.consumer.chanAnswer <- ans
+			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cprep.Identifier, " write response to answer done")
 		}(ans)
 	}
 }
@@ -62,8 +66,10 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
+		log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " write request to provider")
 		go func(fullp []byte) {
 			conn.Write(fullp)
+			log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " write request to provider done")
 		}(fullp)
 	}
 

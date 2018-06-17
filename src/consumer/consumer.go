@@ -11,6 +11,7 @@ import (
 	"sync"
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"time"
 )
 
 type Consumer struct {
@@ -80,6 +81,8 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 		return
 	}
+	log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " got request from client")
+	//
 	ch := make(chan answer)
 	id := cpreq.Identifier
 
@@ -88,10 +91,12 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answerMu.Unlock()
 
 	c.chanRequest <- cpreq
+	log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " sending request to connection")
 
 	//t := time.Now()
 
 	ret := <-ch
+	log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " got response from connection")
 
 	//delay := time.Since(t)
 	//connection := c.connections[ret.connId]
@@ -104,6 +109,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	//}
 
 	io.WriteString(w, string(ret.reply))
+	log.Println(time.Now().UnixNano()/int64(time.Millisecond), ":", cpreq.Identifier, " write response to client")
 }
 
 func (c *Consumer) listenHTTP() {
