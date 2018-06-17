@@ -14,7 +14,6 @@ type provider struct {
 	weight      uint32
 	consumer    *Consumer
 	activeMu    sync.Mutex
-	connections []*connection
 	chanRequest chan protocol.CustRequest
 	chanDelay   chan time.Duration
 	delay       int64

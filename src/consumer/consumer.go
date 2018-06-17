@@ -58,6 +58,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		converter:   protocol.SimpleConverter{},
 		connections: make([]*connection, 0),
 		chanAnswer:  make(chan answer, queueSize),
+		chanRequest: make(chan protocol.CustRequest, queueSize),
 		answer:      make(map[uint64]chan answer),
 	}
 
@@ -134,7 +135,6 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		info:        info,
 		weight:      info.Weight,
 		consumer:    c,
-		connections: make([]*connection, 0),
 		chanRequest: make(chan protocol.CustRequest, queueSize),
 		chanDelay:   make(chan time.Duration, queueSize),
 		active:      0,
@@ -185,7 +185,6 @@ func (c *Consumer) addConnection(p *provider) {
 	connection.connId = len(c.connections)
 	c.connections = append(c.connections, connection)
 	c.connectionsMu.Unlock()
-	p.connections = append(p.connections, connection)
 	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
 	go connection.dealWithConnection(conn)
 }
