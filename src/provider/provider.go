@@ -307,6 +307,8 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 			log.Println(err)
 			return
 		}
+		timeStamp := time.Now()
+		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": got response from provider")
 		//log.Println("Dubbo Head:", dbh)
 		lens := binary.BigEndian.Uint32(dbh[12:16])
 		dbrep := make([]byte, lens)
