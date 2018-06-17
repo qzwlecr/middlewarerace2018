@@ -21,6 +21,8 @@ const (
 	lnAddr       = ":30000"
 	providerAddr = ":20880"
 	lnPpofAddr   = ":40000"
+
+	connCnt = 100
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
@@ -129,7 +131,20 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 		// connects to provider
 		cReqMsg := make(chan []byte, 10)
 		pRespMsg := make(chan []byte, 10)
-		go providerWrite(cReqMsg, pRespMsg)
+		reqChs := make([]chan []byte, 100)
+		for i := 0; i < connCnt; i++ {
+			reqChs[i] = make(chan []byte, 5)
+		}
+
+		// make connections
+		go func(reqChs []chan []byte) {
+			for i := 0; i < connCnt; i++ {
+				go providerWrite(reqChs[i], pRespMsg)
+			}
+		}(reqChs)
+
+		go dispatchMsg(cReqMsg, reqChs)
+
 		// go convertRequest(addCh, delCh, getReqCh, getRetCh)
 
 		for {
@@ -169,6 +184,18 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 	}(converter)
 
 	<-tcpCh
+}
+
+func dispatchMsg(cReqMsg chan []byte, reqChs []chan []byte) {
+	index := uint32(0)
+	for {
+		msg := <-cReqMsg
+		reqChs[index] <- msg
+		index++
+		if index == connCnt {
+			index = 0
+		}
+	}
 }
 
 func clientRead(cConn net.Conn, cReqMsg chan<- []byte, converter *protocol.SimpleConverter) {
