@@ -17,13 +17,12 @@ type connection struct {
 
 func (c *connection) readFromProvider(conn net.Conn) {
 	var lens uint32
-	var cprep protocol.CustResponse
 	header := make([]byte, headerMaxSize)
-	body := make([]byte, bodyMaxSize)
 	if conn == nil {
 		log.Panic("[PANIC]connection is nil when reading from provider!")
 	}
 	for {
+		var cprep protocol.CustResponse
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
 			log.Fatalln(err)
@@ -31,28 +30,27 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 
 		lens = binary.BigEndian.Uint32(header)
-		if len(body) < int(lens) {
-			body = make([]byte, lens)
-		}
-		_, err = io.ReadFull(conn, body[:lens])
+		body := make([]byte, lens)
+		_, err = io.ReadFull(conn, body)
 		if err != nil {
 			log.Fatalln(err)
 			return
 		}
-
-		cprep.FromByteArr(body[:lens])
-		ans := answer{
-			connId: c.connId,
-			id:     cprep.Identifier,
-			reply:  cprep.Reply,
-		}
-		c.consumer.chanIn <- ans
+		go func(body []byte, cprep protocol.CustResponse) {
+			cprep.FromByteArr(body)
+			ans := answer{
+				connId: c.connId,
+				id:     cprep.Identifier,
+				reply:  cprep.Reply,
+			}
+			c.consumer.chanIn <- ans
+		}(body, cprep)
 	}
 }
 
 func (c *connection) writeToProvider(conn net.Conn) {
-	header := make([]byte, headerMaxSize)
 	var lens uint32
+	header := make([]byte, headerMaxSize)
 	for cpreq := range c.provider.chanOut {
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
