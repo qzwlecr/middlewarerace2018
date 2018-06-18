@@ -103,15 +103,15 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = ch
 	c.answerMu.Unlock()
 
-	//t := time.Now()
+	t := time.Now()
 
 	c.chanOut <- cpreq
 
 	ret := <-ch
 
-	//delay := time.Since(t)
-	//connection := c.connections[ret.connId]
-	//log.Println(connection.provider.info, "has Delay:", delay)
+	delay := time.Since(t)
+	connection := c.connections[ret.connId]
+	go log.Println(connection.provider.info, "'s", connection.connId, "has Delay:", delay)
 	//provider := connection.provider
 	//connection.ignoreNum++
 	//if connection.ignoreNum > ignoreSize {
