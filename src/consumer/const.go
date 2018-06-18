@@ -10,7 +10,7 @@ const (
 	queueSize           = 512
 	overLoadSize        = 10
 	headerMaxSize       = 4
-	bodyMaxSize   = 4096
+	bodyMaxSize         = 8192
 	delayTimes          = 1.25
 	fullMaxLevel        = 10
 	baseDelaySampleSize = 100

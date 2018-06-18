@@ -14,16 +14,19 @@ type connection struct {
 	ignoreNum int
 	consumer  *Consumer
 	provider  *provider
+	readBuf   []byte
+	writeBuf  []byte
 }
 
 func (c *connection) readFromProvider(conn net.Conn) {
 	var lens uint32
+	var cprep protocol.CustResponse
 	header := make([]byte, headerMaxSize)
+	c.readBuf = make([]byte, bodyMaxSize)
 	if conn == nil {
 		log.Panic("[PANIC]connection is nil when reading from provider!")
 	}
 	for {
-		var cprep protocol.CustResponse
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
 			log.Fatalln(err)
@@ -31,22 +34,22 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 
 		lens = binary.BigEndian.Uint32(header)
-		body := make([]byte, lens)
-		_, err = io.ReadFull(conn, body)
+		if int(lens) > len(c.readBuf) {
+			c.readBuf = make([]byte, lens)
+		}
+		_, err = io.ReadFull(conn, c.readBuf[:lens])
 		if err != nil {
 			log.Fatalln(err)
 			return
 		}
-		go func(body []byte, cprep protocol.CustResponse) {
-			cprep.FromByteArr(body)
-			log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
-			ans := answer{
-				connId: c.connId,
-				id:     cprep.Identifier,
-				reply:  cprep.Reply,
-			}
-			c.consumer.chanIn <- ans
-		}(body, cprep)
+		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
+		cprep.FromByteArr(c.readBuf[:lens])
+		ans := answer{
+			connId: c.connId,
+			id:     cprep.Identifier,
+			reply:  cprep.Reply,
+		}
+		c.consumer.chanIn <- ans
 	}
 }
 

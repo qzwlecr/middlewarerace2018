@@ -226,6 +226,15 @@ func (c *Consumer) updateAnswer() {
 	}
 }
 func (c *Consumer) forwardRequests() {
+	for len(c.providers) < 3 {
+
+	}
+	providerCache := make([]*provider, 3)
+	i := 0
+	for _, p := range c.providers {
+		providerCache[i] = p
+		i++
+	}
 	for {
 		var req protocol.CustRequest
 		for _, p := range c.providers {
