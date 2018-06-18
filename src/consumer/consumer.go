@@ -11,9 +11,11 @@ import (
 	"sync"
 	"time"
 
+	_ "net/http/pprof"
+	"runtime"
+
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"runtime"
 )
 
 //var connId int
@@ -132,6 +134,9 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Consumer) listenHTTP() {
+	go func() {
+		log.Fatal(http.ListenAndServe(":20000", nil))
+	}()
 	http.HandleFunc("/", c.clientHandler)
 	log.Fatal(http.ListenAndServe(":"+listenPort, nil))
 }
