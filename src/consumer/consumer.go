@@ -25,8 +25,7 @@ type Consumer struct {
 	converter     protocol.SimpleConverter
 	connections   []*connection
 	connectionsMu sync.Mutex
-	answerMu      sync.RWMutex
-	answer        map[uint64]chan answer
+	answer        sync.Map
 	chanOut       chan protocol.CustRequest
 	chanIn        chan answer
 }
@@ -61,7 +60,6 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		connections: make([]*connection, 0),
 		chanOut:     make(chan protocol.CustRequest, queueSize),
 		chanIn:      make(chan answer, queueSize),
-		answer:      make(map[uint64]chan answer),
 	}
 
 	go c.watchProvider()
@@ -99,18 +97,16 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	ch := make(chan answer)
 	id := cpreq.Identifier
 
-	c.answerMu.Lock()
-	c.answer[id] = ch
-	c.answerMu.Unlock()
+	c.answer.Store(id, ch)
 
 	// t := time.Now().UnixNano()/int64(time.Millisecond)
 	//tm := time.Now().UnixNano() / int64(time.Millisecond)
-	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	c.chanOut <- cpreq
 
 	ret := <-ch
-	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
 	//tmnw := time.Now().UnixNano() / int64(time.Millisecond)
 	//if tmnw-tm > 70 {
 	// problematic pack!
@@ -227,20 +223,14 @@ func (c *Consumer) watchProvider() {
 
 func (c *Consumer) updateAnswer() {
 	for ans := range c.chanIn {
-		c.answerMu.RLock()
-		c.answer[ans.id] <- ans
-		c.answerMu.RUnlock()
+		ch, _ := c.answer.Load(ans.id)
+		ch.(chan answer) <- ans
 	}
 }
-func (c *Consumer) forwardRequests() {
-	for len(c.providers) < 3 {
 
-	}
-	providerCache := make([]*provider, 3)
-	i := 0
-	for _, p := range c.providers {
-		providerCache[i] = p
-		i++
+func (c *Consumer) forwardRequests() {
+	for len(c.providers) == 0 {
+
 	}
 	for {
 		var req protocol.CustRequest
