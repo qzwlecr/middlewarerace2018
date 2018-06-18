@@ -29,7 +29,8 @@ func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
 func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
 	defer timing.Since(time.Now(), "PROT CustReqFromByteArr")
 	cur.Identifier = binary.BigEndian.Uint64(buffer[:8])
-	cur.Content = buffer[8:]
+	cur.Content = make([]byte, len(buffer[8:]))
+	copy(cur.Content, buffer[8:])
 	return nil
 }
 
@@ -55,7 +56,8 @@ func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
 	cus.Identifier = binary.BigEndian.Uint64(buffer[:8])
 	cus.Delay = binary.BigEndian.Uint64(buffer[8:16])
 	if cus.Delay != CUST_MAGIC {
-		cus.Reply = buffer[16:]
+		cus.Reply = make([]byte, 0)
+		copy(cus.Reply, buffer[16:])
 	} else {
 		cus.Reply = make([]byte, 0)
 	}
@@ -107,7 +109,8 @@ func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
 	dp.ReqType = uint8(buffer[2])
 	dp.Status = uint8(buffer[3])
 	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
-	dp.Payload = buffer[16:]
+	dp.Payload = make([]byte, len(buffer[16:]))
+	copy(dp.Payload, buffer[16:])
 	return nil
 }
 
@@ -159,7 +162,7 @@ func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
 	return l2buf.Bytes(), nil
 }
 
-// FromByteArr: make go happy
+// FromByteArr make go happy
 func (pack *HttpPacks) FromByteArr(buffer []byte) (err error) {
 	if FORCE_ASSERTION {
 		assert(false, "Static asserted.")
