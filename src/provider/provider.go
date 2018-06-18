@@ -204,8 +204,8 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte, converter *protocol.Simpl
 			log.Println("failed to read length", err)
 			return
 		}
-		timeStamp := time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": got request from customer")
+		// timeStamp := time.Now()
+		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": got request from customer")
 
 		lens := binary.BigEndian.Uint32(bl)
 
@@ -282,7 +282,7 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 	for {
 		tm := time.Now()
-		log.Println(tm.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to provider")
+		// log.Println(tm.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to provider")
 
 		//log.Println("msg from cReqMsg", msg)
 
@@ -302,8 +302,8 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 		//log.Println("out", dbReq)
 		n, err := pConn.Write(msg)
-		timeStamp := time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " done sending to provider")
+		// timeStamp := time.Now()
+		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " done sending to provider")
 		// log.Println("current requests pending: ", len(cReqMsg))
 
 		if err != nil || n != len(msg) {
@@ -331,8 +331,8 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 			log.Println(err)
 			return
 		}
-		timeStamp := time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ":", binary.BigEndian.Uint64(dbh[4:12]), " got response from provider")
+		// timeStamp := time.Now()
+		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ":", binary.BigEndian.Uint64(dbh[4:12]), " got response from provider")
 		//log.Println("Dubbo Head:", dbh)
 		lens := binary.BigEndian.Uint32(dbh[12:16])
 		dbrep := make([]byte, lens)
@@ -394,15 +394,15 @@ func clientWrite(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cC
 		bl := make([]byte, 4)
 		binary.BigEndian.PutUint32(bl, uint32(len(cbrep)))
 
-		timeStamp := time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to customer")
+		// timeStamp := time.Now()
+		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to customer")
 		_, err = cConn.Write(bl)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		timeStamp = time.Now()
-		log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " done sending to customer")
+		// timeStamp = time.Now()
+		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " done sending to customer")
 
 		//log.Println("to customer", cbrep)
 		_, err = cConn.Write(cbrep)
