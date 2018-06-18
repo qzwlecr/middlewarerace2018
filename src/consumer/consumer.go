@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"protocol"
@@ -66,8 +67,8 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 
 	go c.watchProvider()
 	go c.listenHTTP()
-	go c.updateAnswer()
-	go c.forwardRequests()
+	//go c.updateAnswer()
+	//go c.forwardRequests()
 	//go c.OverloadCheck()
 	return c
 }
@@ -105,7 +106,20 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	tm := time.Now().UnixNano() / int64(time.Millisecond)
 	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
-	c.chanOut <- cpreq
+	// c.chanOut <- cpreq
+	sumWg := 0
+	for _, p := range c.providers {
+		sumWg += int(p.weight)
+	}
+	rndWg := rand.Intn(sumWg)
+	for _, p := range c.providers {
+		rndWg -= int(p.weight)
+		if rndWg < 0 {
+			log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
+			p.chanOut <- cpreq
+			break
+		}
+	}
 
 	// runtime.Gosched()
 
@@ -227,16 +241,6 @@ func (c *Consumer) watchProvider() {
 				delete(c.providers, string(ev.Kv.Key))
 			}
 		}
-	}
-}
-
-func (c *Consumer) updateAnswer() {
-	runtime.LockOSThread()
-	for ans := range c.chanIn {
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
-		ch, _ := c.answer.Load(ans.id)
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
-		ch.(chan answer) <- ans
 	}
 }
 

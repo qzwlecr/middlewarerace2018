@@ -49,7 +49,10 @@ func (c *connection) readFromProvider(conn net.Conn) {
 			id:     cprep.Identifier,
 			reply:  cprep.Reply,
 		}
-		c.consumer.chanIn <- ans
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
+		ch, _ := c.consumer.answer.Load(ans.id)
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
+		ch.(chan answer) <- ans
 	}
 }
 
