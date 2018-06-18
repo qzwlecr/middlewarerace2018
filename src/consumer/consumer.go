@@ -14,7 +14,7 @@ import (
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/fasthttp"
+	"github.com/valyala/fasthttp"
 )
 
 //var connId int
