@@ -56,7 +56,7 @@ func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
 	cus.Identifier = binary.BigEndian.Uint64(buffer[:8])
 	cus.Delay = binary.BigEndian.Uint64(buffer[8:16])
 	if cus.Delay != CUST_MAGIC {
-		cus.Reply = make([]byte, 0)
+		cus.Reply = make([]byte, len(buffer[16:]))
 		copy(cus.Reply, buffer[16:])
 	} else {
 		cus.Reply = make([]byte, 0)
