@@ -343,11 +343,12 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 		// log.Println("Dubbo Head:", dbh)
 		lens := binary.BigEndian.Uint32(dbh[12:16])
 		dbrep := make([]byte, lens)
-		_, err = io.ReadFull(pConn, dbrep)
+		n, err := io.ReadFull(pConn, dbrep)
 		if err != nil {
 			log.Println(err)
 			return
 		}
+		log.Println("length read: ", n)
 		log.Println(binary.BigEndian.Uint64(dbh[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Recv from Consumer Complete")
 		dbrep = append(dbh, dbrep...)
 
