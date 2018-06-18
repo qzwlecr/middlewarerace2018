@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 )
@@ -127,12 +126,12 @@ func (cnvt *SimpleConverter) CustomToDubbo(custreq CustRequest) (dubboreq DubboP
 	return dubboreq, nil
 }
 
-func assert(a bool, pnstr string) {
-	if !a {
-		log.Panicln("Assertion Failed: " + pnstr)
-		panic("Assertion Failed: " + pnstr)
-	}
-}
+//func assert(a bool, pnstr string) {
+//	if !a {
+//		log.Panicln("Assertion Failed: " + pnstr)
+//		panic("Assertion Failed: " + pnstr)
+//	}
+//}
 
 // DubboToCustom : TODO test.
 func (cnvt *SimpleConverter) DubboToCustom(extrainfo uint64, dubboresp DubboPacks) (custresp CustResponse, err error) {

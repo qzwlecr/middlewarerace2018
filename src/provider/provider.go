@@ -8,8 +8,6 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"time"
-
 	//_ "net/http/pprof"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
@@ -122,10 +120,10 @@ func (p *Provider) Start() {
 }
 
 // maintaing timing map
-type tMapEntry struct {
-	id   [8]byte
-	tBeg time.Time
-}
+//type tMapEntry struct {
+//	id   [8]byte
+//	tBeg time.Time
+//}
 
 func handleReq(ln *net.TCPListener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
 	defer ln.Close()

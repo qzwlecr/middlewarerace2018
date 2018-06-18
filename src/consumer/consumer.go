@@ -20,17 +20,18 @@ import (
 //var connId int
 
 type Consumer struct {
-	watchPath      string
-	etcdAddr       []string
-	etcdClient     *etcdv3.Client
-	providers      []*provider
-	providersQueue []*provider
-	converter      protocol.SimpleConverter
-	connections    []*connection
-	connectionsMu  sync.Mutex
-	answer         sync.Map
-	chanOut        chan protocol.CustRequest
-	chanIn         chan answer
+	watchPath        string
+	etcdAddr         []string
+	etcdClient       *etcdv3.Client
+	providers        []*provider
+	providersQueue   []*provider
+	providersQueueMu sync.Mutex
+	converter        protocol.SimpleConverter
+	connections      []*connection
+	connectionsMu    sync.Mutex
+	answer           sync.Map
+	chanOut          chan protocol.CustRequest
+	chanIn           chan answer
 }
 
 type answer struct {
@@ -107,7 +108,7 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	//tm := time.Now().UnixNano() / int64(time.Millisecond)
 	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
-	p := c.providersQueue[rand.Intn(len(c.providers))]
+	p := c.providersQueue[rand.Intn(len(c.providersQueue))]
 	p.chanOut <- cpreq
 
 	runtime.Gosched()
@@ -157,25 +158,15 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers = append(c.providers, p)
-	if p.name == "/provider/small" {
-		for i := 0; i < 10; i++ {
-			c.addConnection(p)
-		}
-	} else {
-		if p.name == "/provider/medium" {
-			for i := 0; i < 10; i++ {
-				c.addConnection(p)
-			}
-		} else {
-			for i := 0; i < 10; i++ {
-				c.addConnection(p)
-			}
-
-		}
+	for i := 0; i < 10; i++ {
+		c.addConnection(p)
 	}
+	c.providersQueueMu.Lock()
 	for i := 0; i < int(p.weight); i++ {
 		c.providersQueue = append(c.providersQueue, p)
 	}
+	c.providersQueueMu.Unlock()
+
 	//p.tryConnect()
 
 	//go p.maintain()

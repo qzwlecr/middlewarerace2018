@@ -42,7 +42,7 @@ func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 	binary.BigEndian.PutUint64(u64buf, cus.Delay)
 	pbuf.Write(u64buf[:8])
 	//if cus.Delay != CUST_MAGIC {
-	//	pbuf.Write(cus.Reply)
+		pbuf.Write(cus.Reply)
 	//}
 	return pbuf.Bytes(), nil
 }
@@ -114,19 +114,19 @@ func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
 // CheckFormat check if the pack format is correct.
 func (dp *DubboPacks) CheckFormat(buffer []byte) (err error) {
 	//defer timing.Since(time.Now(), "DEBG DubbCheckFmt")
-	assert(len(buffer) > 16, "Too short in dubbo.")
+	//assert(len(buffer) > 16, "Too short in dubbo.")
 	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
-	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
+	//assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
 	dp.ReqType = uint8(buffer[2])
-	assert(dp.ReqType&DUBBO_REQUEST != 0, "Not a request.")
-	assert(dp.ReqType&DUBBO_NEEDREPLY != 0, "Not 2-way.")
-	assert(dp.ReqType&DUBBO_EVENT == 0, "Is a event.")
-	assert(dp.ReqType&0x6 != 0, "Serialization type gg.")
+	//assert(dp.ReqType&DUBBO_REQUEST != 0, "Not a request.")
+	//assert(dp.ReqType&DUBBO_NEEDREPLY != 0, "Not 2-way.")
+	//assert(dp.ReqType&DUBBO_EVENT == 0, "Is a event.")
+	//assert(dp.ReqType&0x6 != 0, "Serialization type gg.")
 	dp.Status = uint8(buffer[3])
 	dp.ReqId = binary.BigEndian.Uint64(buffer[4:12])
-	payloadlen := binary.BigEndian.Uint32(buffer[12:16])
+	//payloadlen := binary.BigEndian.Uint32(buffer[12:16])
 	dp.Payload = buffer[16:]
-	assert(len(dp.Payload) == int(payloadlen), "Dynamic length part mismatched.")
+	//assert(len(dp.Payload) == int(payloadlen), "Dynamic length part mismatched.")
 	return nil
 }
 
