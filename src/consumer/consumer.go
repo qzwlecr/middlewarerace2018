@@ -89,14 +89,14 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	var hp protocol.HttpPacks
-	ctx.Request.PostArgs().VisitAll(hp.FromFasthttpRequests)
+	ctx.PostArgs().VisitAll(hp.FromFasthttpRequests)
 
 	cpreq, err := c.converter.HTTPToCustom(hp)
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
-	ch := make(chan answer)
+	ch := make(chan answer, 1)
 	id := cpreq.Identifier
 
 	c.answer.Store(id, ch)
