@@ -1,13 +1,13 @@
 package main
 
 import (
-	"provider"
-	"flag"
 	"consumer"
-	"net"
-	"os"
+	"flag"
 	"log"
-	//_ "net/http/pprof"
+	"net"
+	_ "net/http/pprof"
+	"os"
+	"provider"
 )
 
 func GetLocalIP() string {
@@ -44,7 +44,7 @@ func main() {
 	if *types == "provider" {
 		provider.NewProvider(
 			[]string{*etcdUrl},
-			"/provider/" + *name,
+			"/provider/"+*name,
 			provider.ProviderInfo{
 				IP:     GetLocalIP(),
 				Weight: uint32(*weight),

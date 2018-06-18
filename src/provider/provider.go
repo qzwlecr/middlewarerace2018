@@ -10,7 +10,8 @@ import (
 	"protocol"
 	"time"
 
-	// _ "net/http/pprof"
+	"net/http"
+	_ "net/http/pprof"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
@@ -62,7 +63,9 @@ func (p *Provider) Start() {
 		p.revoke()
 		log.Fatal(err)
 	}
-	// go log.Fatal(http.ListenAndServe(lnPpofAddr, nil))
+	go func() {
+		log.Fatal(http.ListenAndServe(lnPpofAddr, nil))
+	}()
 
 	tcpCh := make(chan int)
 
