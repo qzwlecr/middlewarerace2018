@@ -223,7 +223,9 @@ func (c *Consumer) watchProvider() {
 
 func (c *Consumer) updateAnswer() {
 	for ans := range c.chanIn {
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
 		ch, _ := c.answer.Load(ans.id)
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
 		ch.(chan answer) <- ans
 	}
 }
@@ -238,6 +240,7 @@ func (c *Consumer) forwardRequests() {
 			for i := 0; i < int(p.weight); i++ {
 				req = <-c.chanOut
 				p.chanOut <- req
+				log.Println(req.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
 			}
 		}
 	}
