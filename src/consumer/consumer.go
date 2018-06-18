@@ -133,6 +133,11 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Consumer) listenHTTP() {
+	/*
+		go func() {
+			log.Fatal(http.ListenAndServe(":20000", nil))
+		}()
+	*/
 	http.HandleFunc("/", c.clientHandler)
 	log.Fatal(http.ListenAndServe(":"+listenPort, nil))
 }
