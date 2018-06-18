@@ -15,7 +15,7 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
-var connId int
+//var connId int
 
 type Consumer struct {
 	watchPath     string
@@ -104,18 +104,18 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answerMu.Unlock()
 
 	// t := time.Now().UnixNano()/int64(time.Millisecond)
-	tm := time.Now().UnixNano() / int64(time.Millisecond)
-	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
+	//tm := time.Now().UnixNano() / int64(time.Millisecond)
+	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	c.chanOut <- cpreq
 
 	ret := <-ch
-	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
-	tmnw := time.Now().UnixNano() / int64(time.Millisecond)
-	if tmnw-tm > 70 {
-		// problematic pack!
-		log.Println(id, "NeedInspect")
-	}
+	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
+	//tmnw := time.Now().UnixNano() / int64(time.Millisecond)
+	//if tmnw-tm > 70 {
+	// problematic pack!
+	//log.Println(id, "NeedInspect")
+	//}
 
 	// delay := time.Since(t)
 	// connection := c.connections[ret.connId]
@@ -154,16 +154,16 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 	}
 	c.providers[p.name] = p
 	if p.name == "/provider/small" {
-		for i := 0; i < 1; i++ {
+		for i := 0; i < 10; i++ {
 			c.addConnection(p)
 		}
 	} else {
 		if p.name == "/provider/medium" {
-			for i := 0; i < 1; i++ {
+			for i := 0; i < 10; i++ {
 				c.addConnection(p)
 			}
 		} else {
-			for i := 0; i < 1; i++ {
+			for i := 0; i < 10; i++ {
 				c.addConnection(p)
 			}
 
@@ -244,7 +244,7 @@ func (c *Consumer) forwardRequests() {
 	}
 	for {
 		var req protocol.CustRequest
-		for _, p := range providerCache {
+		for _, p := range c.providers {
 			for i := 0; i < int(p.weight); i++ {
 				req = <-c.chanOut
 				p.chanOut <- req
