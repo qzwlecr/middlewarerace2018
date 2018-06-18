@@ -23,7 +23,7 @@ type Consumer struct {
 	watchPath     string
 	etcdAddr      []string
 	etcdClient    *etcdv3.Client
-	providers     map[string]*provider
+	providers     []*provider
 	converter     protocol.SimpleConverter
 	connections   []*connection
 	connectionsMu sync.Mutex
@@ -57,7 +57,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 		watchPath:   watchPath,
 		etcdAddr:    endpoints,
 		etcdClient:  cli,
-		providers:   make(map[string]*provider),
+		providers:   make([]*provider, 0),
 		converter:   protocol.SimpleConverter{},
 		connections: make([]*connection, 0),
 		chanOut:     make(chan protocol.CustRequest, queueSize),
@@ -167,7 +167,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		chanOut:         make(chan protocol.CustRequest, queueSize),
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
-	c.providers[p.name] = p
+	c.providers = append(c.providers, p)
 	if p.name == "/provider/small" {
 		for i := 0; i < 10; i++ {
 			c.addConnection(p)
@@ -234,7 +234,7 @@ func (c *Consumer) watchProvider() {
 				info := c.getProviderInfo(*ev.Kv)
 				c.addProvider(string(ev.Kv.Key), info)
 			case etcdv3.EventTypeDelete:
-				delete(c.providers, string(ev.Kv.Key))
+				//delete(c.providers, string(ev.Kv.Key))
 			}
 		}
 	}
