@@ -51,7 +51,7 @@ func (c *connection) readFromProvider(conn net.Conn) {
 func (c *connection) writeToProvider(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
 	var lens uint32
-	for cpreq := range c.consumer.chanOut {
+	for cpreq := range c.provider.chanOut {
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)

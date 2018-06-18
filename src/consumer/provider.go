@@ -3,6 +3,7 @@ package consumer
 import (
 	"time"
 	"log"
+	"protocol"
 )
 
 //var testp protocol.CustRequest
@@ -17,9 +18,9 @@ type provider struct {
 	baseDelay       int64
 	baseDelaySample int
 	chanDelay       chan time.Duration
+	chanOut         chan protocol.CustRequest
 
 	//connections []connection
-	//chanOut     chan protocol.CustRequest
 	//chanIn      chan protocol.CustResponse
 }
 

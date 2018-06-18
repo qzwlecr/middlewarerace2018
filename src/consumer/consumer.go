@@ -67,6 +67,7 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 	go c.watchProvider()
 	go c.listenHTTP()
 	go c.updateAnswer()
+	go c.forwardRequests()
 	//go c.OverloadCheck()
 	return c
 }
@@ -140,7 +141,7 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 		fullLevel:       0,
 		isFull:          false,
 		chanDelay:       make(chan time.Duration, queueSize),
-		//chanOut:     make(chan protocol.CustRequest, queueSize),
+		chanOut:         make(chan protocol.CustRequest, queueSize),
 		//chanIn:      make(chan protocol.CustResponse, queueSize),
 	}
 	c.providers[p.name] = p
@@ -219,6 +220,17 @@ func (c *Consumer) updateAnswer() {
 		c.answerMu.RLock()
 		c.answer[ans.id] <- ans
 		c.answerMu.RUnlock()
+	}
+}
+func (c *Consumer) forwardRequests() {
+	for {
+		var req protocol.CustRequest
+		for _, p := range c.providers {
+			for i := 0; i < int(p.weight); i++ {
+				req = <-c.chanOut
+				p.chanOut <- req
+			}
+		}
 	}
 }
 
