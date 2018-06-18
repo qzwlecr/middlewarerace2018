@@ -115,12 +115,6 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	// delay := time.Since(t)
 	// connection := c.connections[ret.connId]
 
-<<<<<<< HEAD
-	delay := time.Since(t)
-	connection := c.connections[ret.connId]
-	go log.Println(connection.provider.info, "'s", connection.connId, "has Delay:", delay)
-=======
->>>>>>> zhwklb
 	//provider := connection.provider
 	//connection.ignoreNum++
 	//if connection.ignoreNum > ignoreSize {
