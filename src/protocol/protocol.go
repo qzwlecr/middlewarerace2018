@@ -4,18 +4,15 @@ import "bytes"
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"net/http"
-	"time"
 	MemoryPool "utility/mempool"
-	"utility/timing"
 )
 
 var mmp = MemoryPool.NewZhwkMemoryPool(20)
 
 // ToByteArr : make go happy
 func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
-	defer timing.Since(time.Now(), "PROT CustReqToByteArr")
+	//defer timing.Since(time.Now(), "PROT CustReqToByteArr")
 	var buf bytes.Buffer
 	bid, idbuf, err := mmp.Acquire()
 	defer mmp.Release(bid)
@@ -27,7 +24,7 @@ func (cur *CustRequest) ToByteArr() (buffer []byte, err error) {
 
 // FromByteArr: make go happy
 func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
-	defer timing.Since(time.Now(), "PROT CustReqFromByteArr")
+	//defer timing.Since(time.Now(), "PROT CustReqFromByteArr")
 	cur.Identifier = binary.BigEndian.Uint64(buffer[:8])
 	cur.Content = make([]byte, len(buffer[8:]))
 	copy(cur.Content, buffer[8:])
@@ -36,7 +33,7 @@ func (cur *CustRequest) FromByteArr(buffer []byte) (err error) {
 
 // ToByteArr : make go happy
 func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
-	defer timing.Since(time.Now(), "PROT CustRespToByteArr")
+	//defer timing.Since(time.Now(), "PROT CustRespToByteArr")
 	var pbuf bytes.Buffer
 	bid, u64buf, err := mmp.Acquire()
 	defer mmp.Release(bid)
@@ -44,29 +41,29 @@ func (cus *CustResponse) ToByteArr() (buffer []byte, err error) {
 	pbuf.Write(u64buf[:8])
 	binary.BigEndian.PutUint64(u64buf, cus.Delay)
 	pbuf.Write(u64buf[:8])
-	if cus.Delay != CUST_MAGIC {
-		pbuf.Write(cus.Reply)
-	}
+	//if cus.Delay != CUST_MAGIC {
+	//	pbuf.Write(cus.Reply)
+	//}
 	return pbuf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
 func (cus *CustResponse) FromByteArr(buffer []byte) (err error) {
-	defer timing.Since(time.Now(), "PROT CustRespFromByteArr")
+	//defer timing.Since(time.Now(), "PROT CustRespFromByteArr")
 	cus.Identifier = binary.BigEndian.Uint64(buffer[:8])
 	cus.Delay = binary.BigEndian.Uint64(buffer[8:16])
-	if cus.Delay != CUST_MAGIC {
-		cus.Reply = make([]byte, len(buffer[16:]))
-		copy(cus.Reply, buffer[16:])
-	} else {
-		cus.Reply = make([]byte, 0)
-	}
+	//if cus.Delay != CUST_MAGIC {
+	cus.Reply = make([]byte, len(buffer[16:]))
+	copy(cus.Reply, buffer[16:])
+	//} else {
+	//	cus.Reply = make([]byte, 0)
+	//}
 	return nil
 }
 
 // ToByteArr : make go happy
 func (dp *DubboPacks) ToByteArr() (buffer []byte, err error) {
-	defer timing.Since(time.Now(), "PROT DubbToByteArr")
+	//defer timing.Since(time.Now(), "PROT DubbToByteArr")
 	var pbuf bytes.Buffer
 	// u16buf := make([]byte, 2)
 	// u32buf := make([]byte, 4)
@@ -83,27 +80,27 @@ func (dp *DubboPacks) ToByteArr() (buffer []byte, err error) {
 	binary.BigEndian.PutUint32(buf, uint32(len(dp.Payload)))
 	pbuf.Write(buf[:4])
 	pbuf.Write(dp.Payload)
-	if LOGGING {
-		log.Println("DUBB as bytes:")
-		log.Println(pbuf.Bytes())
-		log.Println("DUBB as string:")
-		log.Println(string(pbuf.Bytes()))
-	}
+	//if LOGGING {
+	//	log.Println("DUBB as bytes:")
+	//	log.Println(pbuf.Bytes())
+	//	log.Println("DUBB as string:")
+	//	log.Println(string(pbuf.Bytes()))
+	//}
 	return pbuf.Bytes(), nil
 }
 
 // FromByteArr: make go happy
 func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
-	defer timing.Since(time.Now(), "PROT DubbFromByteArr")
-	if FORCE_ASSERTION {
-		assert(len(buffer) > 16, "Too short in dubbo.")
-	} else if len(buffer) <= 16 {
+	//defer timing.Since(time.Now(), "PROT DubbFromByteArr")
+	//if FORCE_ASSERTION {
+	//	assert(len(buffer) > 16, "Too short in dubbo.")
+	if len(buffer) <= 16 {
 		return fmt.Errorf("Too short in dubbo frombytearr()")
 	}
 	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
-	if FORCE_ASSERTION {
-		assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
-	} else if dp.Magic != DUBBO_MAGIC {
+	//if FORCE_ASSERTION {
+	//	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
+	if dp.Magic != DUBBO_MAGIC {
 		return fmt.Errorf("Magic mismatch in dubbo frombytearr()")
 	}
 	dp.ReqType = uint8(buffer[2])
@@ -116,7 +113,7 @@ func (dp *DubboPacks) FromByteArr(buffer []byte) (err error) {
 
 // CheckFormat check if the pack format is correct.
 func (dp *DubboPacks) CheckFormat(buffer []byte) (err error) {
-	defer timing.Since(time.Now(), "DEBG DubbCheckFmt")
+	//defer timing.Since(time.Now(), "DEBG DubbCheckFmt")
 	assert(len(buffer) > 16, "Too short in dubbo.")
 	dp.Magic = binary.BigEndian.Uint16(buffer[0:2])
 	assert(dp.Magic == DUBBO_MAGIC, "Not so magic in dubbo.")
@@ -135,10 +132,10 @@ func (dp *DubboPacks) CheckFormat(buffer []byte) (err error) {
 
 // ToByteArr : make go happy
 func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
-	defer timing.Since(time.Now(), "PROT HttpToByteArr <- WARNING ->")
-	if FORCE_ASSERTION {
-		assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
-	} else if (len(httpack.Direct) ^ len(httpack.Payload)) == 0 {
+	//defer timing.Since(time.Now(), "PROT HttpToByteArr <- WARNING ->")
+	//if FORCE_ASSERTION {
+	//	assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+	if (len(httpack.Direct) ^ len(httpack.Payload)) == 0 {
 		return buffer, fmt.Errorf("Http direct and payload both exist or non-exist")
 	}
 	var l2buf bytes.Buffer
@@ -164,11 +161,11 @@ func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
 
 // FromByteArr make go happy
 func (pack *HttpPacks) FromByteArr(buffer []byte) (err error) {
-	if FORCE_ASSERTION {
-		assert(false, "Static asserted.")
-	} else {
-		assert(false, "Static asserted")
-	}
+	//if FORCE_ASSERTION {
+	//	assert(false, "Static asserted.")
+	//} else {
+	//	assert(false, "Static asserted")
+	//}
 	// log.Panic("Maybe using unusable code.")
 	//packBuf := bytes.NewBuffer(buffer)
 	//

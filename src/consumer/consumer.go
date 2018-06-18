@@ -20,16 +20,17 @@ import (
 //var connId int
 
 type Consumer struct {
-	watchPath     string
-	etcdAddr      []string
-	etcdClient    *etcdv3.Client
-	providers     []*provider
-	converter     protocol.SimpleConverter
-	connections   []*connection
-	connectionsMu sync.Mutex
-	answer        sync.Map
-	chanOut       chan protocol.CustRequest
-	chanIn        chan answer
+	watchPath      string
+	etcdAddr       []string
+	etcdClient     *etcdv3.Client
+	providers      []*provider
+	providersQueue []*provider
+	converter      protocol.SimpleConverter
+	connections    []*connection
+	connectionsMu  sync.Mutex
+	answer         sync.Map
+	chanOut        chan protocol.CustRequest
+	chanIn         chan answer
 }
 
 type answer struct {
@@ -103,33 +104,21 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	c.answer.Store(id, ch)
 
 	// t := time.Now().UnixNano()/int64(time.Millisecond)
-	tm := time.Now().UnixNano() / int64(time.Millisecond)
+	//tm := time.Now().UnixNano() / int64(time.Millisecond)
 	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
-	// c.chanOut <- cpreq
-	sumWg := 0
-	for _, p := range c.providers {
-		sumWg += int(p.weight)
-	}
-	rndWg := rand.Intn(sumWg)
-	for _, p := range c.providers {
-		rndWg -= int(p.weight)
-		if rndWg < 0 {
-			//log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
-			p.chanOut <- cpreq
-			break
-		}
-	}
+	p := c.providersQueue[rand.Intn(len(c.providers))]
+	p.chanOut <- cpreq
 
-	//runtime.Gosched()
+	runtime.Gosched()
 
 	ret := <-ch
 	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
-	tmnw := time.Now().UnixNano() / int64(time.Millisecond)
-	if tmnw-tm > 70 {
-		//problematic pack!
-		log.Println(id, "NeedInspect")
-	}
+	//tmnw := time.Now().UnixNano() / int64(time.Millisecond)
+	//if tmnw-tm > 70 {
+	//	//problematic pack!
+	//	log.Println(id, "NeedInspect")
+	//}
 
 	// delay := time.Since(t)
 	// connection := c.connections[ret.connId]
@@ -183,6 +172,9 @@ func (c *Consumer) addProvider(key string, info providerInfo) {
 			}
 
 		}
+	}
+	for i := 0; i < int(p.weight); i++ {
+		c.providersQueue = append(c.providersQueue, p)
 	}
 	//p.tryConnect()
 

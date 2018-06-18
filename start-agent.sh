@@ -8,7 +8,7 @@ echo ETCD_URL = $ETCD_URL
 
 if [[ "$1" == "consumer" ]]; then
   echo "Starting consumer agent..."
-  /root/dists/agent -t=consumer -n=normal
+  GOMAXPROCS=32 /root/dists/agent -t=consumer -n=normal
 
 elif [[ "$1" == "provider-small" ]]; then
   echo "Starting small provider agent..."
