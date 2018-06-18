@@ -101,12 +101,12 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	// t := time.Now().UnixNano()/int64(time.Millisecond)
 	//tm := time.Now().UnixNano() / int64(time.Millisecond)
-	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	c.chanOut <- cpreq
 
 	ret := <-ch
-	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
 	//tmnw := time.Now().UnixNano() / int64(time.Millisecond)
 	//if tmnw-tm > 70 {
 	// problematic pack!
