@@ -13,6 +13,7 @@ import (
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"runtime"
 )
 
 //var connId int
@@ -104,6 +105,8 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	c.chanOut <- cpreq
+
+	runtime.Gosched()
 
 	ret := <-ch
 	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
@@ -222,6 +225,7 @@ func (c *Consumer) watchProvider() {
 }
 
 func (c *Consumer) updateAnswer() {
+	runtime.LockOSThread()
 	for ans := range c.chanIn {
 		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
 		ch, _ := c.answer.Load(ans.id)
@@ -234,6 +238,7 @@ func (c *Consumer) forwardRequests() {
 	for len(c.providers) == 0 {
 
 	}
+	runtime.LockOSThread()
 	for {
 		var req protocol.CustRequest
 		for _, p := range c.providers {
