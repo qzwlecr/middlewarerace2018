@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 	"net"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"os"
 	"provider"
 )

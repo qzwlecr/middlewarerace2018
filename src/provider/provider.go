@@ -10,8 +10,7 @@ import (
 	"protocol"
 	"time"
 
-	"net/http"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 )
@@ -63,9 +62,9 @@ func (p *Provider) Start() {
 		p.revoke()
 		log.Fatal(err)
 	}
-	go func() {
-		log.Fatal(http.ListenAndServe(lnPpofAddr, nil))
-	}()
+	//go func() {
+	//	log.Fatal(http.ListenAndServe(lnPpofAddr, nil))
+	//}()
 
 	tcpCh := make(chan int)
 
@@ -224,7 +223,7 @@ func clientRead(cConn net.Conn, cReqMsg chan<- []byte, converter *protocol.Simpl
 		var cpreq protocol.CustRequest
 
 		cpreq.FromByteArr(cbreq)
-		log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv From Consumer Complete")
+		//log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv From Consumer Complete")
 		dpreq, err := converter.CustomToDubbo(cpreq)
 		if err != nil {
 			log.Fatal(err)
@@ -286,7 +285,7 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 
 	for {
 		// tm := time.Now().UnixNano()/int64(time.Millisecond)
-		// log.Println(tm.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to provider")
+		//log.Println(tm.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " sending to provider")
 
 		//log.Println("msg from cReqMsg", msg)
 
@@ -305,9 +304,9 @@ func providerWrite(cReqMsg <-chan []byte, pRespMsg chan<- []byte) {
 		// pReqMsg <- dbreq
 
 		//log.Println("out", dbReq)
-		log.Println(binary.BigEndian.Uint64(msg[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
+		//log.Println(binary.BigEndian.Uint64(msg[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
 		n, err := pConn.Write(msg)
-		log.Println(binary.BigEndian.Uint64(msg[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Send to Provider Complete")
+		//log.Println(binary.BigEndian.Uint64(msg[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Send to Provider Complete")
 		// timeStamp := time.Now().UnixNano()/int64(time.Millisecond)
 		// log.Println(timeStamp.UnixNano()/int64(time.Millisecond), ": ", binary.BigEndian.Uint64(msg[4:12]), " done sending to provider")
 		// log.Println("current requests pending: ", len(cReqMsg))
@@ -347,7 +346,7 @@ func providerRead(pConn net.Conn, pRespMsg chan<- []byte) {
 			log.Println(err)
 			return
 		}
-		log.Println(binary.BigEndian.Uint64(dbh[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Recv from Consumer Complete")
+		//log.Println(binary.BigEndian.Uint64(dbh[4:12]), time.Now().UnixNano()/int64(time.Millisecond), "Recv from Consumer Complete")
 		dbrep = append(dbh, dbrep...)
 
 		// var id [8]byte
@@ -417,7 +416,7 @@ func clientWrite(converter *protocol.SimpleConverter, pRespMsg <-chan []byte, cC
 			log.Println(err)
 			return
 		}
-		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to Consumer Completed")
+		//log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to Consumer Completed")
 		// timing.Since(tm, "WRIT Provider//clientWrite < EACH Req")
 	}
 }
