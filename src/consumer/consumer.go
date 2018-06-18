@@ -183,7 +183,9 @@ func (c *Consumer) addConnection(p *provider) {
 	connection.connId = len(c.connections)
 	c.connections = append(c.connections, connection)
 	c.connectionsMu.Unlock()
-	conn, _ := net.Dial("tcp", net.JoinHostPort(p.info.IP, requestPort))
+	addr, _ := net.ResolveTCPAddr("tcp", net.JoinHostPort(p.info.IP, requestPort))
+	conn, _ := net.DialTCP("tcp", nil, addr)
+	conn.SetNoDelay(false)
 	go connection.readFromProvider(conn)
 	go connection.writeToProvider(conn)
 }
@@ -242,7 +244,7 @@ func (c *Consumer) forwardRequests() {
 	}
 	for {
 		var req protocol.CustRequest
-		for _, p := range c.providers {
+		for _, p := range providerCache {
 			for i := 0; i < int(p.weight); i++ {
 				req = <-c.chanOut
 				p.chanOut <- req

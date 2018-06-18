@@ -42,8 +42,8 @@ func (c *connection) readFromProvider(conn net.Conn) {
 			log.Fatalln(err)
 			return
 		}
-		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
 		cprep.FromByteArr(c.readBuf[:lens])
+		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
 		ans := answer{
 			connId: c.connId,
 			id:     cprep.Identifier,
