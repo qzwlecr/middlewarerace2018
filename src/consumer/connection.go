@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"protocol"
+	"time"
 )
 
 type connection struct {
@@ -39,6 +40,7 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 
 		cprep.FromByteArr(body)
+		log.Println(cprep.Identifier, time.Now(), "Recv from ProvAgnt Get")
 		ans := answer{
 			connId: c.connId,
 			id:     cprep.Identifier,
@@ -62,7 +64,10 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
 
-		go conn.Write(fullp)
+		go func(cpreq protocol.CustRequest) {
+			conn.Write(fullp)
+			log.Println(cpreq.Identifier, time.Now(), "Send to ProvAgnt Complete")
+		}(cpreq)
 	}
 
 }
