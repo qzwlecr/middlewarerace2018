@@ -22,7 +22,7 @@ const (
 	providerAddr = ":20880"
 	lnPpofAddr   = ":40000"
 
-	connCnt = 1
+	connCnt = 10
 )
 
 //NewProvider receive etcd server address, the service name, and the service info.
