@@ -58,7 +58,7 @@ func NewProvider(endpoints []string, name string, info ProviderInfo) *Provider {
 func (p *Provider) Start() {
 	ch := p.keepAlive()
 
-	ln, err := net.Listen("tcp", lnAddr)
+	ln, err := net.ListenTCP("tcp", lnAddr)
 	if err != nil {
 		p.revoke()
 		log.Fatal(err)
@@ -126,7 +126,7 @@ type tMapEntry struct {
 	tBeg time.Time
 }
 
-func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
+func handleReq(ln net.TCPListener, tcpCh <-chan int, converter *protocol.SimpleConverter) {
 	defer ln.Close()
 
 	go func(converter *protocol.SimpleConverter) {
@@ -146,7 +146,8 @@ func handleReq(ln net.Listener, tcpCh <-chan int, converter *protocol.SimpleConv
 
 		for {
 			// tm := time.Now().UnixNano()/int64(time.Millisecond)
-			cConn, err := ln.Accept()
+			cConn, err := ln.AcceptTCP()
+			cConn.SetNoDelay(false)
 			if err != nil {
 				log.Fatal(err)
 			}
