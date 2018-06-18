@@ -70,10 +70,8 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		binary.BigEndian.PutUint32(header, lens)
 		fullp := append(header, cbreq...)
 
-		go func(cpreq protocol.CustRequest) {
-			conn.Write(fullp)
-			log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Complete")
-		}(cpreq)
+		conn.Write(fullp)
+		log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Complete")
 	}
 
 }

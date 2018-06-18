@@ -7,15 +7,14 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"net/http"
 	"protocol"
 	"sync"
 	"time"
-
 	"runtime"
 
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/fasthttp"
 )
 
 //var connId int
@@ -85,12 +84,12 @@ func NewConsumer(endpoints []string, watchPath string) *Consumer {
 //	}
 //}
 
-func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
+func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	for len(c.providers) == 0 {
 	}
 
 	var hp protocol.HttpPacks
-	hp.FromRequests(r)
+	ctx.Request.PostArgs().VisitAll(hp.FromFasthttpRequests)
 
 	cpreq, err := c.converter.HTTPToCustom(hp)
 	if err != nil {
@@ -143,17 +142,13 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	//
 	//}
 
-	io.WriteString(w, string(ret.reply))
+	io.WriteString(ctx, string(ret.reply))
 }
 
 func (c *Consumer) listenHTTP() {
-	/*
-		go func() {
-			log.Fatal(http.ListenAndServe(":20000", nil))
-		}()
-	*/
-	http.HandleFunc("/", c.clientHandler)
-	log.Fatal(http.ListenAndServe(":"+listenPort, nil))
+	if err := fasthttp.ListenAndServe(":"+listenPort, c.clientHandler); err != nil {
+		log.Fatalln(err)
+	}
 }
 
 //addProvider add (key,info) to the consumer's map.
@@ -241,6 +236,15 @@ func (c *Consumer) watchProvider() {
 				delete(c.providers, string(ev.Kv.Key))
 			}
 		}
+	}
+}
+
+func (c *Consumer) updateAnswer() {
+	for ans := range c.chanIn {
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
+		ch, _ := c.answer.Load(ans.id)
+		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
+		ch.(chan answer) <- ans
 	}
 }
 

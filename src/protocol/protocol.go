@@ -137,7 +137,7 @@ func (dp *DubboPacks) CheckFormat(buffer []byte) (err error) {
 func (httpack *HttpPacks) ToByteArr() (buffer []byte, err error) {
 	defer timing.Since(time.Now(), "PROT HttpToByteArr <- WARNING ->")
 	if FORCE_ASSERTION {
-		assert((len(httpack.Direct)^len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
+		assert((len(httpack.Direct) ^ len(httpack.Payload)) != 0, "HTTP packs Direct & Payload both exist or both non-exist.")
 	} else if (len(httpack.Direct) ^ len(httpack.Payload)) == 0 {
 		return buffer, fmt.Errorf("Http direct and payload both exist or non-exist")
 	}
@@ -258,5 +258,10 @@ func (pack *HttpPacks) FromByteArr(buffer []byte) (err error) {
 func (pack *HttpPacks) FromRequests(r *http.Request) (err error) {
 	r.ParseForm()
 	pack.Payload = r.Form
+	return nil
+}
+
+func (pack *HttpPacks) FromFasthttpRequests(key, value []byte) {
+	pack.Payload[string(key)] = []string{string(value)}
 	return nil
 }
