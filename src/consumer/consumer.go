@@ -104,7 +104,7 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 
 	// t := time.Now().UnixNano()/int64(time.Millisecond)
 	tm := time.Now().UnixNano() / int64(time.Millisecond)
-	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
+	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	// c.chanOut <- cpreq
 	sumWg := 0
@@ -115,16 +115,16 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	for _, p := range c.providers {
 		rndWg -= int(p.weight)
 		if rndWg < 0 {
-			log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
+			//log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
 			p.chanOut <- cpreq
 			break
 		}
 	}
 
-	// runtime.Gosched()
+	//runtime.Gosched()
 
 	ret := <-ch
-	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
+	//log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
 	tmnw := time.Now().UnixNano() / int64(time.Millisecond)
 	if tmnw-tm > 70 {
 		//problematic pack!
@@ -242,9 +242,9 @@ func (c *Consumer) watchProvider() {
 
 func (c *Consumer) updateAnswer() {
 	for ans := range c.chanIn {
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
+		//log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
 		ch, _ := c.answer.Load(ans.id)
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
+		//log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
 		ch.(chan answer) <- ans
 	}
 }
@@ -260,7 +260,7 @@ func (c *Consumer) forwardRequests() {
 			for i := 0; i < int(p.weight); i++ {
 				req = <-c.chanOut
 				p.chanOut <- req
-				log.Println(req.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
+				//log.Println(req.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Dispatch Complete")
 			}
 		}
 	}

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"time"
 )
 
 type connection struct {
@@ -43,15 +42,15 @@ func (c *connection) readFromProvider(conn net.Conn) {
 			return
 		}
 		cprep.FromByteArr(c.readBuf[:lens])
-		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
+		//log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
 		ans := answer{
 			connId: c.connId,
 			id:     cprep.Identifier,
 			reply:  cprep.Reply,
 		}
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
+		//log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Start")
 		ch, _ := c.consumer.answer.Load(ans.id)
-		log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
+		//log.Println(ans.id, time.Now().UnixNano()/int64(time.Millisecond), "MapWr Complete")
 		ch.(chan answer) <- ans
 	}
 }
@@ -71,7 +70,7 @@ func (c *connection) writeToProvider(conn net.Conn) {
 		fullp := append(header, cbreq...)
 
 		conn.Write(fullp)
-		log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Complete")
+		//log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Complete")
 	}
 
 }
