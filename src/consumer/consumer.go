@@ -89,6 +89,7 @@ func (c *Consumer) clientHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	var hp protocol.HttpPacks
+	hp.Payload = make(map[string][]string)
 	ctx.PostArgs().VisitAll(hp.FromFasthttpRequests)
 
 	cpreq, err := c.converter.HTTPToCustom(hp)

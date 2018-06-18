@@ -263,4 +263,5 @@ func (pack *HttpPacks) FromRequests(r *http.Request) (err error) {
 
 func (pack *HttpPacks) FromFasthttpRequests(key, value []byte) {
 	pack.Payload[string(key)] = []string{string(value)}
+	log.Println(key, value)
 }
