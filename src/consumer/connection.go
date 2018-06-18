@@ -52,10 +52,8 @@ func (c *connection) readFromProvider(conn net.Conn) {
 
 func (c *connection) writeToProvider(conn net.Conn) {
 	header := make([]byte, headerMaxSize)
-	fullp := make([]byte, bodyMaxSize)
 	var lens uint32
 	for cpreq := range c.provider.chanOut {
-		fullp = fullp[:0]
 		cbreq, err := cpreq.ToByteArr()
 		if err != nil {
 			log.Fatalln(err)
@@ -64,8 +62,7 @@ func (c *connection) writeToProvider(conn net.Conn) {
 
 		lens = uint32(len(cbreq))
 		binary.BigEndian.PutUint32(header, lens)
-		fullp = append(fullp, header...)
-		fullp = append(fullp, cbreq...)
+		fullp := append(header, cbreq...)
 
 		go conn.Write(fullp)
 	}
