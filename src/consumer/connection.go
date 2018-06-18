@@ -40,7 +40,7 @@ func (c *connection) readFromProvider(conn net.Conn) {
 		}
 
 		cprep.FromByteArr(body)
-		log.Println(cprep.Identifier, time.Now(), "Recv from ProvAgnt Get")
+		log.Println(cprep.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Get")
 		ans := answer{
 			connId: c.connId,
 			id:     cprep.Identifier,
@@ -66,7 +66,7 @@ func (c *connection) writeToProvider(conn net.Conn) {
 
 		go func(cpreq protocol.CustRequest) {
 			conn.Write(fullp)
-			log.Println(cpreq.Identifier, time.Now(), "Send to ProvAgnt Complete")
+			log.Println(cpreq.Identifier, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Complete")
 		}(cpreq)
 	}
 

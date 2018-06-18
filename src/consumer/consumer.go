@@ -103,14 +103,14 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 	c.answer[id] = ch
 	c.answerMu.Unlock()
 
-	// t := time.Now()
+	// t := time.Now().UnixNano()/int64(time.Millisecond)
 
-	log.Println(id, time.Now(), "Send to ProvAgnt Prepare")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Send to ProvAgnt Prepare")
 
 	c.chanOut <- cpreq
 
 	ret := <-ch
-	log.Println(id, time.Now(), "Recv from ProvAgnt Complete")
+	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
 
 	// delay := time.Since(t)
 	// connection := c.connections[ret.connId]
