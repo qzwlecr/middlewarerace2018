@@ -11,9 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"runtime"
+
 	etcdv3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"runtime"
 )
 
 //var connId int
@@ -106,7 +107,7 @@ func (c *Consumer) clientHandler(w http.ResponseWriter, r *http.Request) {
 
 	c.chanOut <- cpreq
 
-	runtime.Gosched()
+	// runtime.Gosched()
 
 	ret := <-ch
 	log.Println(id, time.Now().UnixNano()/int64(time.Millisecond), "Recv from ProvAgnt Complete")
